@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>フォント比較</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">MVP</p>
+        <h1>フォント比較</h1>
+        <p class="header-copy">同じ文字を同じ条件で並べ、フォントごとの違いを比較します。</p>
+      </div>
+    </header>
+
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="フォント選択">
+        <h2>比較対象</h2>
+        <div class="sidebar-actions">
+          <button type="button" id="selectAllButton">すべて選択</button>
+          <button type="button" id="clearAllButton">すべて解除</button>
+        </div>
+        <div id="fontSelector" class="font-selector"></div>
+      </aside>
+
+      <main class="main-area">
+        <section class="controls" aria-label="比較設定">
+          <div class="control-group">
+            <label for="fontSizeRange">文字サイズ <span id="fontSizeValue">20px</span></label>
+            <input id="fontSizeRange" type="range" min="12" max="48" step="1" value="20" />
+          </div>
+
+          <div class="control-group">
+            <label for="fontWeightSelect">太さ</label>
+            <select id="fontWeightSelect">
+              <option value="300">300</option>
+              <option value="400" selected>400</option>
+              <option value="500">500</option>
+              <option value="600">600</option>
+              <option value="700">700</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label for="lineHeightRange">行間 <span id="lineHeightValue">1.5</span></label>
+            <input id="lineHeightRange" type="range" min="1" max="20" step="0.1" value="15" />
+          </div>
+
+          <div class="control-group">
+            <label for="letterSpacingRange">字間 <span id="letterSpacingValue">0px</span></label>
+            <input id="letterSpacingRange" type="range" min="-10" max="40" step="1" value="0" />
+          </div>
+
+          <div class="control-group mode-group">
+            <span class="mode-label">表示モード</span>
+            <div class="mode-switch" role="tablist" aria-label="表示モード">
+              <button type="button" class="mode-button active" data-mode="normal" aria-pressed="true">通常</button>
+              <button type="button" class="mode-button" data-mode="fixed" aria-pressed="false">固定マス</button>
+              <button type="button" class="mode-button" data-mode="width" aria-pressed="false">実幅枠</button>
+              <button type="button" class="mode-button" data-mode="detail" aria-pressed="false">詳細</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="cardGrid" class="card-grid" aria-live="polite"></section>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
