@@ -13,6 +13,10 @@
   box-sizing: border-box;
 }
 
+[hidden] {
+  display: none !important;
+}
+
 body {
   margin: 0;
   font-family: "Segoe UI", "Yu Gothic UI", sans-serif;
@@ -27,6 +31,10 @@ select {
 }
 
 .app-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
   padding: 24px 32px 20px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
@@ -48,6 +56,34 @@ select {
 .header-copy {
   margin: 0;
   color: var(--muted);
+}
+
+.view-switch {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.view-button {
+  border: 1px solid var(--border);
+  background: #f8fafc;
+  color: var(--text);
+  padding: 9px 14px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.view-button.active {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: #fff;
+}
+
+.view-button:focus-visible,
+.copy-button:focus-visible,
+.category-link:focus-visible {
+  outline: 3px solid rgba(76, 110, 245, 0.32);
+  outline-offset: 2px;
 }
 
 .app-shell {
@@ -340,8 +376,368 @@ select {
   border-radius: 16px;
 }
 
+.katex-page {
+  width: min(1480px, 100%);
+  margin: 0 auto;
+  padding: 32px;
+}
+
+.katex-hero {
+  max-width: 1000px;
+  margin-bottom: 22px;
+}
+
+.katex-hero h2 {
+  margin: 0 0 12px;
+  font-size: clamp(1.8rem, 4vw, 2.8rem);
+  letter-spacing: -0.03em;
+}
+
+.katex-lead {
+  max-width: 900px;
+  margin: 0;
+  font-size: clamp(1rem, 2vw, 1.16rem);
+  line-height: 1.8;
+}
+
+.katex-notes {
+  margin-top: 18px;
+  padding: 14px 16px;
+  border-left: 4px solid var(--accent);
+  border-radius: 0 10px 10px 0;
+  background: #eef2ff;
+  color: #364152;
+}
+
+.katex-notes p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.category-nav {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  margin: 0 -32px 32px;
+  padding: 12px 32px;
+  background: rgba(244, 245, 247, 0.94);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  backdrop-filter: blur(12px);
+  scrollbar-width: thin;
+}
+
+.category-link {
+  flex: 0 0 auto;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.86rem;
+  text-decoration: none;
+}
+
+.category-link:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.katex-section {
+  scroll-margin-top: 76px;
+  margin-bottom: 48px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.section-number {
+  flex: 0 0 auto;
+  margin: 2px 0 0;
+  color: var(--accent);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.section-heading h2 {
+  margin: 0 0 4px;
+  font-size: clamp(1.3rem, 3vw, 1.72rem);
+}
+
+.section-heading p:not(.section-number) {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.role-card,
+.math-card {
+  min-width: 0;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.role-card {
+  padding: 16px;
+}
+
+.role-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.role-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.role-label {
+  flex: 0 0 auto;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3f51b5;
+  font-size: 0.72rem;
+}
+
+.role-examples,
+.role-usage,
+.role-note {
+  margin: 0;
+  line-height: 1.6;
+}
+
+.role-examples {
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.role-examples strong {
+  display: block;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.role-usage {
+  font-size: 0.92rem;
+}
+
+.role-note {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #eef2f6;
+  color: var(--muted);
+  font-size: 0.79rem;
+}
+
+.math-card-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.math-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.math-card-header {
+  padding: 17px 18px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.math-card-header h3 {
+  margin: 0 0 5px;
+  font-size: 1.05rem;
+}
+
+.math-card-header p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.math-result-group,
+.latex-source-group,
+.primary-fonts {
+  padding: 14px 18px;
+}
+
+.math-result-group {
+  border-bottom: 1px solid var(--border);
+}
+
+.math-field-label {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.math-result {
+  min-height: 92px;
+  padding: 22px 14px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  border-radius: 10px;
+  background: #f8fafc;
+  color: #172033;
+  text-align: center;
+  scrollbar-width: thin;
+}
+
+.math-result .katex-display {
+  width: max-content;
+  min-width: 100%;
+  margin: 0;
+  padding: 4px 0;
+  text-align: center;
+}
+
+.math-result .katex {
+  font-size: 1.28em;
+}
+
+.latex-source-group {
+  border-bottom: 1px solid var(--border);
+  background: #fbfcfe;
+}
+
+.latex-source-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.copy-button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  color: var(--text);
+  padding: 5px 9px;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.copy-button:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.latex-source {
+  display: block;
+  overflow-x: auto;
+  padding: 11px 12px;
+  border: 1px solid #e6eaf0;
+  border-radius: 9px;
+  background: #f2f4f7;
+  color: #303846;
+  font-family: Consolas, "Cascadia Code", monospace;
+  font-size: 0.84rem;
+  line-height: 1.55;
+  white-space: pre;
+}
+
+.primary-fonts {
+  margin-top: auto;
+}
+
+.font-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.font-tag {
+  padding: 4px 8px;
+  border: 1px solid #dce3ff;
+  border-radius: 999px;
+  background: #f1f4ff;
+  color: #384ca2;
+  font-family: Consolas, "Cascadia Code", monospace;
+  font-size: 0.74rem;
+}
+
+.math-result.has-error {
+  border: 1px solid #efb8b8;
+  background: #fff5f5;
+  text-align: left;
+}
+
+.math-error-title {
+  margin: 0 0 8px;
+  color: #a01818;
+  font-weight: 700;
+}
+
+.math-error-source {
+  display: block;
+  overflow-x: auto;
+  font-family: Consolas, "Cascadia Code", monospace;
+  white-space: pre;
+}
+
+.math-error-detail {
+  margin: 8px 0 0;
+  color: #7d3030;
+  font-size: 0.82rem;
+}
+
+.copy-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 30;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #243041;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+  font-size: 0.9rem;
+}
+
+.copy-toast.error {
+  background: #9b1c1c;
+}
+
+.copy-fallback {
+  position: fixed;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+}
+
 @media (max-width: 1199px) {
   .card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .role-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -358,6 +754,11 @@ select {
   .controls {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .app-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
 }
 
 @media (max-width: 699px) {
@@ -373,5 +774,37 @@ select {
 
   .card-grid {
     grid-template-columns: 1fr;
+  }
+
+  .katex-page {
+    padding: 24px 18px;
+  }
+
+  .category-nav {
+    margin-right: -18px;
+    margin-left: -18px;
+    padding-right: 18px;
+    padding-left: 18px;
+  }
+
+  .role-grid,
+  .math-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .math-result-group,
+  .latex-source-group,
+  .primary-fonts {
+    padding-right: 14px;
+    padding-left: 14px;
+  }
+
+  .math-result {
+    min-height: 82px;
+    padding: 20px 10px;
+  }
+
+  .math-result .katex {
+    font-size: 1.12em;
   }
 }
