@@ -4,18 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>フォント比較</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/katex@0.17.0/dist/katex.min.css"
+      integrity="sha384-vlBdW0r3AcZO/HboRPznQNowvexd3fY8qHOWkBi5q7KGgqJ+F48+DceybYmrVbmB"
+      crossorigin="anonymous"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <header class="app-header">
       <div>
-        <p class="eyebrow">MVP</p>
+        <p class="eyebrow">FONT LAB</p>
         <h1>フォント比較</h1>
         <p class="header-copy">同じ文字を同じ条件で並べ、フォントごとの違いを比較します。</p>
       </div>
+      <nav class="view-switch" aria-label="表示カテゴリ">
+        <button type="button" class="view-button active" data-view="fonts" aria-pressed="true">通常フォント</button>
+        <button type="button" class="view-button" data-view="katex" aria-pressed="false">KaTeX 数式フォント</button>
+      </nav>
     </header>
 
-    <div class="app-shell">
+    <div id="fontComparisonView" class="app-shell">
       <aside class="sidebar" aria-label="フォント選択">
         <h2>比較対象</h2>
         <div class="sidebar-actions">
@@ -68,6 +78,37 @@
       </main>
     </div>
 
-    <script src="app.js"></script>
+    <main id="katexView" class="katex-page" hidden>
+      <section class="katex-hero" aria-labelledby="katexTitle">
+        <p class="eyebrow">MATH TYPESETTING</p>
+        <h2 id="katexTitle">KaTeX 数式フォント</h2>
+        <p class="katex-lead">KaTeXは、数字・斜体の英字・記号・大型括弧など、数式の部品に合わせて複数の専用フォントを自動で使い分けます。文章全体に1種類を指定する通常フォントとは異なり、KaTeXで組版された状態が本来の表示です。</p>
+        <div class="katex-notes" role="note" aria-label="通常フォントとの違い">
+          <p>フォント単体を選ぶ仕組みではありません。数式内では複数のフォントが組み合わされ、文字幅や位置も専用の情報で調整されます。CSSで別のフォントへ単純に置き換えると、配置が崩れることがあります。</p>
+        </div>
+      </section>
+
+      <nav id="katexCategoryNav" class="category-nav" aria-label="数式用例カテゴリ"></nav>
+
+      <section id="fontRolesSection" class="katex-section" aria-labelledby="fontRolesTitle">
+        <div class="section-heading">
+          <p class="section-number">02</p>
+          <div>
+            <h2 id="fontRolesTitle">フォント群の役割</h2>
+            <p>KaTeXが数式の部品ごとに選ぶ代表的な専用フォントです。</p>
+          </div>
+        </div>
+        <div id="katexFontRoles" class="role-grid"></div>
+      </section>
+
+      <div id="katexExamples"></div>
+    </main>
+
+    <div id="copyToast" class="copy-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
+
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.17.0/dist/katex.min.js" integrity="sha384-AtrdNsnxl/75rvBneBVH7DtOvCxSVahR2zWqle1coBKd8DEmLoviqNeJSx64gNAs" crossorigin="anonymous"></script>
+    <script defer src="app.js"></script>
+    <script defer src="katex-data.js"></script>
+    <script defer src="katex-page.js"></script>
   </body>
 </html>
