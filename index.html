@@ -25,6 +25,27 @@
       </nav>
     </header>
 
+    <section id="memoNexusPanel" class="memo-integration-panel" aria-labelledby="memoNexusTitle" hidden>
+      <div>
+        <p class="eyebrow">MEMO NEXUS INTEGRATION</p>
+        <h2 id="memoNexusTitle">Memo Nexusからフォントを選択中</h2>
+        <p id="memoNexusContext"></p>
+      </div>
+      <div class="memo-integration-actions">
+        <label class="recommendation-filter">
+          <input id="recommendedOnly" type="checkbox">
+          <span>この用途への推奨だけ表示</span>
+        </label>
+        <button id="returnToMemoButton" type="button">Memo Nexusで使用</button>
+        <button id="copyFontSettingButton" type="button">フォント設定をコピー</button>
+      </div>
+      <div class="memo-sample-block">
+        <strong>Memo Nexusから受け取った比較文章</strong>
+        <pre id="memoNexusSample"></pre>
+      </div>
+      <p id="memoNexusStatus" class="memo-integration-status" role="status" aria-live="polite"></p>
+    </section>
+
     <div id="fontComparisonView" class="app-shell">
       <aside class="sidebar" aria-label="フォント選択">
         <h2>比較対象</h2>
@@ -107,6 +128,7 @@
     <div id="copyToast" class="copy-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.17.0/dist/katex.min.js" integrity="sha384-AtrdNsnxl/75rvBneBVH7DtOvCxSVahR2zWqle1coBKd8DEmLoviqNeJSx64gNAs" crossorigin="anonymous"></script>
+    <script defer src="integration-utils.js"></script>
     <script defer src="app.js"></script>
     <script defer src="katex-data.js"></script>
     <script defer src="katex-page.js"></script>

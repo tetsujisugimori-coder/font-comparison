@@ -129,6 +129,62 @@ const fonts = [
   }
 ];
 
+const memoFontMetadata = {
+  'segoe-ui': {
+    memoCssFamily: '"Segoe UI", "Yu Gothic UI", sans-serif',
+    categoryType: 'sans-serif',
+    recommendedFor: ['body', 'heading'],
+    languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
+  },
+  'yu-gothic-ui': {
+    memoCssFamily: '"Yu Gothic UI", "Hiragino Sans", Meiryo, system-ui, sans-serif',
+    categoryType: 'sans-serif',
+    recommendedFor: ['body', 'heading'],
+    languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
+  },
+  meiryo: {
+    memoCssFamily: 'Meiryo, "Yu Gothic UI", sans-serif',
+    categoryType: 'sans-serif',
+    recommendedFor: ['body', 'heading'],
+    languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
+  },
+  'ms-mincho': {
+    memoCssFamily: '"ＭＳ 明朝", "MS Mincho", serif',
+    categoryType: 'serif',
+    recommendedFor: ['body', 'heading'],
+    languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
+  },
+  consolas: {
+    memoCssFamily: 'Consolas, "Courier New", monospace',
+    categoryType: 'monospace',
+    recommendedFor: ['code'],
+    languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
+  },
+  'cascadia-code': {
+    memoCssFamily: '"Cascadia Code", Consolas, monospace',
+    categoryType: 'monospace',
+    recommendedFor: ['code'],
+    languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
+  },
+  'courier-new': {
+    memoCssFamily: '"Courier New", Consolas, monospace',
+    categoryType: 'monospace',
+    recommendedFor: ['code'],
+    languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
+  },
+  'times-new-roman': {
+    memoCssFamily: '"Times New Roman", "ＭＳ 明朝", serif',
+    categoryType: 'serif',
+    recommendedFor: ['body', 'heading'],
+    languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
+  }
+};
+
+fonts.forEach((font) => Object.assign(font, memoFontMetadata[font.id], {
+  license: '未確認',
+  sourceUrl: ''
+}));
+
 const samples = {
   normal: [
     { title: '日本語', text: 'いろはにほへと　ちりぬるを\n第３条天皇ハ神聖ニシテ侵スヘカラス', lang: null },
@@ -152,10 +208,47 @@ const state = {
 
 const selector = document.getElementById('fontSelector');
 const cardGrid = document.getElementById('cardGrid');
+const integrationApi = window.FontComparisonIntegration;
+const memoIntegration = integrationApi.parseMemoNexusParams(location.search, fonts.map((font) => font.id));
+const memoNexusPanel = document.getElementById('memoNexusPanel');
+const memoNexusContext = document.getElementById('memoNexusContext');
+const memoNexusSample = document.getElementById('memoNexusSample');
+const memoNexusStatus = document.getElementById('memoNexusStatus');
+const recommendedOnly = document.getElementById('recommendedOnly');
+const returnToMemoButton = document.getElementById('returnToMemoButton');
+const copyFontSettingButton = document.getElementById('copyFontSettingButton');
+let selectedMemoFontId = memoIntegration?.currentFontId || null;
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
+function isRecommended(font) {
+  return Boolean(memoIntegration && font.recommendedFor.includes(memoIntegration.target));
+}
+
+function languageStatusLabel(value) {
+  return {
+    supported: '対応',
+    partial: '一部対応',
+    unsupported: '非対応',
+    unknown: '未確認'
+  }[value] || '未確認';
+}
+
+function orderedFonts(items) {
+  if (!memoIntegration) return items;
+  return [...items].sort((a, b) => Number(isRecommended(b)) - Number(isRecommended(a)));
+}
 
 function renderSelector() {
   selector.innerHTML = '';
-  fonts.forEach((font) => {
+  orderedFonts(fonts).forEach((font) => {
     const label = document.createElement('label');
     label.className = 'font-option';
     label.innerHTML = `
@@ -177,7 +270,10 @@ function renderSelector() {
 }
 
 function renderCards() {
-  const selectedFonts = fonts.filter((font) => state.selectedIds.includes(font.id));
+  const selectedFonts = orderedFonts(fonts.filter((font) => {
+    if (!state.selectedIds.includes(font.id)) return false;
+    return !memoIntegration || !recommendedOnly.checked || isRecommended(font);
+  }));
 
   if (selectedFonts.length === 0) {
     cardGrid.innerHTML = '<div class="empty-state">表示するフォントがありません。選択を増やしてください。</div>';
@@ -187,7 +283,7 @@ function renderCards() {
   cardGrid.innerHTML = '';
   selectedFonts.forEach((font) => {
     const card = document.createElement('article');
-    card.className = 'font-card';
+    card.className = `font-card${font.id === selectedMemoFontId ? ' memo-selected' : ''}`;
     card.style.setProperty('--font-size', `${state.fontSize}px`);
     card.style.setProperty('--font-weight', `${state.fontWeight}`);
     card.style.setProperty('--line-height', `${state.lineHeight}`);
@@ -195,6 +291,16 @@ function renderCards() {
     card.style.setProperty('--sample-font', font.cssFamily);
 
     card.innerHTML = `
+      ${memoIntegration ? `
+        <div class="memo-font-choice">
+          <span class="recommendation-badge ${isRecommended(font) ? 'recommended' : ''}">
+            ${isRecommended(font) ? 'この用途に推奨' : '推奨情報なし'}
+          </span>
+          <button type="button" class="select-memo-font" data-font-id="${font.id}" aria-pressed="${font.id === selectedMemoFontId}">
+            ${font.id === selectedMemoFontId ? '選択中' : 'このフォントを選択'}
+          </button>
+        </div>
+      ` : ''}
       <div class="font-card-header">
         <h3 class="font-card-name">${font.name}</h3>
         <p class="font-card-category">${font.category}</p>
@@ -223,6 +329,11 @@ function renderCards() {
             <li>書体分類: ${font.attributes.classification}</li>
             <li>利用環境: ${font.attributes.environment}</li>
             <li>フォント機能: ${font.attributes.features.length > 0 ? font.attributes.features.join(' / ') : '未調査'}</li>
+            ${memoIntegration ? `
+              <li>言語情報: ラテン ${languageStatusLabel(font.languages.latin)} / 日本語 ${languageStatusLabel(font.languages.japanese)} / 簡体字 ${languageStatusLabel(font.languages.simplifiedChinese)} / 繁体字 ${languageStatusLabel(font.languages.traditionalChinese)} / 韓国語 ${languageStatusLabel(font.languages.korean)}</li>
+              <li>ライセンス: ${font.license}</li>
+              <li>配布元URL: ${font.sourceUrl || '未確認'}</li>
+            ` : ''}
           </ul>
         </div>
         <div class="footer-block">
@@ -232,14 +343,28 @@ function renderCards() {
       </div>
     `;
 
+    card.querySelector('.select-memo-font')?.addEventListener('click', () => {
+      selectedMemoFontId = font.id;
+      memoNexusStatus.textContent = `${font.name}を選択しました。内容を確認してMemo Nexusへ戻れます。`;
+      renderCards();
+    });
     cardGrid.appendChild(card);
   });
 }
 
 function renderSampleContent(font) {
+  const memoSample = memoIntegration?.sample
+    ? `
+      <section class="sample-section memo-passed-sample">
+        <h4 class="section-title">Memo Nexusの比較文章</h4>
+        <div class="sample-text">${escapeHtml(memoIntegration.sample)}</div>
+      </section>
+    `
+    : '';
+
   if (state.mode === 'fixed') {
     const chars = ['あ', '漢', 'A', 'g', '0', '1', 'i', 'W'];
-    return `
+    return `${memoSample}
       <div class="fixed-grid">
         ${chars.map((char) => `<div class="fixed-cell">${char}</div>`).join('')}
       </div>
@@ -248,7 +373,7 @@ function renderSampleContent(font) {
 
   if (state.mode === 'width') {
     const rows = ['iiiiiiiiii', 'WWWWWWWWWW', '1234567890'];
-    return `
+    return `${memoSample}
       <div class="sample-text">
         ${rows.map((row) => `<div class="width-line">${Array.from(row).map((char) => `<span class="width-char">${char}</span>`).join('')}</div>`).join('')}
       </div>
@@ -256,7 +381,7 @@ function renderSampleContent(font) {
   }
 
   if (state.mode === 'detail') {
-    return `
+    return `${memoSample}
       ${samples.normal.map((section) => `
         <section class="sample-section">
           <h4 class="section-title">${section.title}</h4>
@@ -276,7 +401,7 @@ function renderSampleContent(font) {
     `;
   }
 
-  return `
+  return `${memoSample}
     ${samples.normal.map((section) => `
       <section class="sample-section">
         <h4 class="section-title">${section.title}</h4>
@@ -290,6 +415,55 @@ function updateControlLabels() {
   document.getElementById('fontSizeValue').textContent = `${state.fontSize}px`;
   document.getElementById('lineHeightValue').textContent = `${state.lineHeight.toFixed(1)}`;
   document.getElementById('letterSpacingValue').textContent = `${state.letterSpacing}px`;
+}
+
+function initializeMemoIntegration() {
+  if (!memoIntegration) return;
+  const targetLabels = { body: '本文', heading: '見出し', code: 'コード' };
+  const currentFont = fonts.find((font) => font.id === memoIntegration.currentFontId);
+  state.selectedIds = fonts.map((font) => font.id);
+  memoNexusPanel.hidden = false;
+  document.body.classList.add('memo-integration-mode');
+  document.querySelector('.view-switch').hidden = true;
+  memoNexusContext.textContent = [
+    `対象: ${targetLabels[memoIntegration.target]}`,
+    `適用範囲: ${memoIntegration.scope === 'note' ? 'このメモ' : '全体設定'}`,
+    `現在: ${currentFont?.name || '未確認'}`
+  ].join(' / ');
+  memoNexusSample.textContent = memoIntegration.sample || '比較文章は指定されていません。';
+
+  const canReturn = memoIntegration.errors.length === 0
+    && integrationApi.isAllowedReturnUrl(memoIntegration.returnUrl);
+  returnToMemoButton.disabled = !canReturn;
+  if (!canReturn) {
+    const detail = memoIntegration.errors.length
+      ? memoIntegration.errors.join(' ')
+      : '安全なMemo Nexusの戻り先を確認できません。';
+    memoNexusStatus.textContent = `${detail} フォント設定のコピーは利用できます。`;
+  }
+}
+
+async function copyText(value) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return;
+    } catch {
+      // ローカルファイルなどClipboard APIが使えない環境では下の方法を試します。
+    }
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = value;
+  textarea.className = 'copy-fallback';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  if (!copied) throw new Error('クリップボードへコピーできませんでした。');
+}
+
+function selectedMemoFont() {
+  return fonts.find((font) => font.id === selectedMemoFontId);
 }
 
 function bindControls() {
@@ -339,8 +513,27 @@ function bindControls() {
     renderSelector();
     renderCards();
   });
+
+  recommendedOnly.addEventListener('change', renderCards);
+  returnToMemoButton.addEventListener('click', () => {
+    try {
+      location.assign(integrationApi.buildMemoNexusReturnUrl(memoIntegration, selectedMemoFont()));
+    } catch (error) {
+      memoNexusStatus.textContent = `${error.message} フォント設定をコピーして手動で利用してください。`;
+    }
+  });
+  copyFontSettingButton.addEventListener('click', () => {
+    copyText(integrationApi.fontSettingCopyText(memoIntegration, selectedMemoFont()))
+      .then(() => {
+        memoNexusStatus.textContent = 'フォント設定をコピーしました。';
+      })
+      .catch((error) => {
+        memoNexusStatus.textContent = error.message || 'フォント設定をコピーできませんでした。';
+      });
+  });
 }
 
+initializeMemoIntegration();
 renderSelector();
 bindControls();
 updateControlLabels();
