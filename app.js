@@ -1,5 +1,54 @@
+const openTypeFeatureDefinitions = {
+  liga: {
+    name: '標準合字',
+    description: 'fiやflなどを1文字として表示する合字を有効化する'
+  },
+  kern: {
+    name: 'カーニング',
+    description: '文字組みで文字間隔を微調整し読みやすさを向上する'
+  },
+  palt: {
+    name: 'プロポーショナル字形',
+    description: '約物や文字の字幅を文脈に応じて調整する'
+  },
+  vert: {
+    name: '縦書き字形',
+    description: '縦書き時に適した字形へ置換する'
+  },
+  tnum: {
+    name: '等幅数字',
+    description: '数字を同じ幅で表示する'
+  },
+  smcp: {
+    name: 'スモールキャップ',
+    description: '小文字を小型の大文字風字形へ置き換える'
+  },
+  ss01: {
+    name: 'スタイルセット1',
+    description: 'デザイン替えのオプション字形へ切り替える'
+  }
+};
+
+const openTypeFeatureOrder = ['liga', 'kern', 'palt', 'vert', 'tnum', 'smcp', 'ss01'];
+const openTypeStatusLabels = { confirmed: '収録確認済み', unsupported: '未収録', unknown: '未確認' };
+
+function makeOpenTypeProfile(isVerified, supportedTags = []) {
+  return { verified: isVerified, supportedTags };
+}
+
+function makeFontEntry(base) {
+  return {
+    ...base,
+    attributes: {
+      ...base.attributes,
+      sourceKind: base.sourceType === 'web' ? 'Webフォント' : 'システムフォント',
+      source: base.sourceType === 'web' ? 'Google Fonts' : 'Windows'
+    }
+  };
+}
+
 const fonts = [
-  {
+  makeFontEntry({
     id: 'segoe-ui',
     name: 'Segoe UI',
     cssFamily: '"Segoe UI"',
@@ -11,11 +60,14 @@ const fonts = [
       width: 'プロポーショナル',
       classification: 'ゴシック体 / サンセリフ',
       environment: 'Windows標準',
-      features: []
+      features: [],
+      openType: makeOpenTypeProfile(true, ['liga', 'kern', 'smcp', 'ss01', 'tnum'])
     },
+    sourceType: 'system',
+    fontOrigin: 'システム',
     notes: '日本語や中国語部分ではフォールバックが発生する可能性があります。'
-  },
-  {
+  }),
+  makeFontEntry({
     id: 'yu-gothic-ui',
     name: 'Yu Gothic UI',
     cssFamily: '"Yu Gothic UI"',
@@ -27,11 +79,14 @@ const fonts = [
       width: 'プロポーショナル',
       classification: 'ゴシック体 / サンセリフ',
       environment: 'Windows標準',
-      features: []
+      features: [],
+      openType: makeOpenTypeProfile(true, ['liga', 'kern'])
     },
+    sourceType: 'system',
+    fontOrigin: 'システム',
     notes: '小さいサイズや細いウェイトでは、文字が薄く見える場合があります。'
-  },
-  {
+  }),
+  makeFontEntry({
     id: 'meiryo',
     name: 'Meiryo',
     cssFamily: 'Meiryo',
@@ -43,11 +98,14 @@ const fonts = [
       width: 'プロポーショナル',
       classification: 'ゴシック体 / サンセリフ',
       environment: 'Windows標準',
-      features: []
+      features: [],
+      openType: makeOpenTypeProfile(true, ['liga', 'kern', 'vert', 'smcp'])
     },
+    sourceType: 'system',
+    fontOrigin: 'システム',
     notes: '文字が比較的大きく、文章によっては密度が高く見える場合があります。'
-  },
-  {
+  }),
+  makeFontEntry({
     id: 'ms-mincho',
     name: 'MS Mincho',
     cssFamily: '"ＭＳ 明朝", "MS Mincho", serif',
@@ -59,11 +117,14 @@ const fonts = [
       width: '等幅',
       classification: '明朝体 / セリフ',
       environment: 'Windows標準',
-      features: []
+      features: [],
+      openType: makeOpenTypeProfile(true, ['vert'])
     },
+    sourceType: 'system',
+    fontOrigin: 'システム',
     notes: '画面上の小さいサイズでは、細い線が見えにくい場合があります。'
-  },
-  {
+  }),
+  makeFontEntry({
     id: 'consolas',
     name: 'Consolas',
     cssFamily: 'Consolas',
@@ -75,11 +136,14 @@ const fonts = [
       width: '等幅',
       classification: 'サンセリフ寄り',
       environment: 'Windows標準',
-      features: []
+      features: [],
+      openType: makeOpenTypeProfile(true, ['liga'])
     },
+    sourceType: 'system',
+    fontOrigin: 'システム',
     notes: '日本語や中国語部分ではフォールバックが発生する可能性があります。'
-  },
-  {
+  }),
+  makeFontEntry({
     id: 'cascadia-code',
     name: 'Cascadia Code',
     cssFamily: '"Cascadia Code"',
@@ -91,11 +155,33 @@ const fonts = [
       width: '等幅',
       classification: 'サンセリフ寄り',
       environment: 'インストール済みか要確認',
-      features: []
+      features: [],
+      openType: makeOpenTypeProfile(false, [])
     },
+    sourceType: 'system',
+    fontOrigin: 'システム',
     notes: '環境によってはインストールされていない可能性があります。'
-  },
-  {
+  }),
+  makeFontEntry({
+    id: 'noto-sans-jp-web',
+    name: 'Noto Sans JP',
+    cssFamily: '"Noto Sans JP", sans-serif',
+    category: 'サンセリフ / プロポーショナル',
+    impression: ['読みやすい', '汎用', 'Web配信向け'],
+    uses: ['本文', 'UI', '説明文'],
+    attributes: {
+      supports: ['基本ラテン対応', '日本語対応', 'Webフォント'],
+      width: 'プロポーショナル',
+      classification: 'サンセリフ',
+      environment: 'Web',
+      features: [],
+      openType: makeOpenTypeProfile(false, [])
+    },
+    sourceType: 'web',
+    fontOrigin: 'Web',
+    notes: 'Web配信フォント向けに同じ表示形式でOpenType機能を確認します。'
+  }),
+  makeFontEntry({
     id: 'courier-new',
     name: 'Courier New',
     cssFamily: '"Courier New"',
@@ -107,11 +193,14 @@ const fonts = [
       width: '等幅',
       classification: 'セリフ',
       environment: 'Windows標準',
-      features: []
+      features: [],
+      openType: makeOpenTypeProfile(true, ['liga', 'kern'])
     },
+    sourceType: 'system',
+    fontOrigin: 'システム',
     notes: '日本語や中国語部分ではフォールバックが発生する可能性があります。'
-  },
-  {
+  }),
+  makeFontEntry({
     id: 'times-new-roman',
     name: 'Times New Roman',
     cssFamily: '"Times New Roman"',
@@ -123,10 +212,13 @@ const fonts = [
       width: 'プロポーショナル',
       classification: 'セリフ',
       environment: 'Windows標準',
-      features: []
+      features: [],
+      openType: makeOpenTypeProfile(true, ['liga', 'kern', 'tnum', 'smcp', 'ss01'])
     },
+    sourceType: 'system',
+    fontOrigin: 'システム',
     notes: '日本語や中国語部分ではフォールバックが発生する可能性があります。'
-  }
+  })
 ];
 
 const memoFontMetadata = {
@@ -177,6 +269,12 @@ const memoFontMetadata = {
     categoryType: 'serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
+  },
+  'noto-sans-jp-web': {
+    memoCssFamily: '"Noto Sans JP", sans-serif',
+    categoryType: 'sans-serif',
+    recommendedFor: ['body', 'heading'],
+    languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   }
 };
 
@@ -220,6 +318,11 @@ const officialFontMetadata = {
     officialScripts: ['ラテン', 'ギリシャ', 'キリル', 'アルメニア', 'アラビア（補助）', 'ヘブライ（補助）'],
     license: 'Microsoft製品付属（再配布は別途ライセンス確認）',
     sourceUrl: 'https://learn.microsoft.com/en-us/typography/font-list/times-new-roman'
+  },
+  'noto-sans-jp-web': {
+    officialScripts: ['日本語', 'ラテン'],
+    license: 'SIL Open Font License 1.1',
+    sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+JP'
   }
 };
 
@@ -245,7 +348,8 @@ const state = {
   fontWeight: 400,
   lineHeight: 1.5,
   letterSpacing: 0,
-  mode: 'normal'
+  mode: 'normal',
+  openTypeFeaturePanels: {}
 };
 
 const selector = document.getElementById('fontSelector');
@@ -288,6 +392,66 @@ function languageStatusLabel(value) {
 function orderedFonts(items) {
   if (!memoIntegration) return items;
   return [...items].sort((a, b) => Number(isRecommended(b)) - Number(isRecommended(a)));
+}
+
+function openTypeFeatureStatus(font, tag) {
+  const profile = font.attributes?.openType;
+  if (!profile?.verified) return 'unknown';
+  return profile.supportedTags.includes(tag) ? 'confirmed' : 'unsupported';
+}
+
+function openTypeFeatureRows(font) {
+  if (!font.attributes?.openType?.verified) return [];
+  return openTypeFeatureOrder.map((tag) => {
+    const definition = openTypeFeatureDefinitions[tag];
+    if (!definition) return null;
+    const status = openTypeFeatureStatus(font, tag);
+    return {
+      tag,
+      name: definition.name,
+      description: definition.description,
+      status,
+      statusLabel: openTypeStatusLabels[status]
+    };
+  }).filter(Boolean);
+}
+
+function openTypeFeatureSummary(font) {
+  const profile = font.attributes?.openType;
+  if (!profile?.verified) return '未確認';
+  const rows = openTypeFeatureRows(font);
+  const confirmedCount = rows.filter((row) => row.status === 'confirmed').length;
+  return `収録確認済み: ${confirmedCount} / ${rows.length}件`;
+}
+
+function openTypeFeaturePanelContent(font) {
+  if (!font.attributes?.openType?.verified) {
+    return '<p class="open-type-empty">OpenType機能は未確認です。収録状況を確認できていません。</p>';
+  }
+  const rows = openTypeFeatureRows(font);
+  if (!rows.length) return '<p class="open-type-empty">OpenType機能情報が未登録です。</p>';
+  return `
+    <ul class="open-type-feature-list">
+      ${rows.map((row) => `
+        <li class="open-type-feature-item status-${row.status}">
+          <span class="feature-tag">${row.tag}</span>
+          <span class="feature-title">${row.name}</span>
+          <span class="feature-status">${row.statusLabel}</span>
+          <p class="feature-description">${row.description}</p>
+        </li>
+      `).join('')}
+    </ul>
+  `;
+}
+
+function updateOpenTypePanelState(button, panel, open) {
+  button.setAttribute('aria-expanded', String(open));
+  button.classList.toggle('is-open', open);
+  panel.classList.toggle('is-open', open);
+  const label = button.querySelector('.open-type-toggle-label');
+  const baseName = button.dataset.fontName || 'このフォント';
+  button.setAttribute('aria-label', `${baseName}のOpenType機能を${open ? '閉じる' : '開く'}`);
+  if (label) label.textContent = open ? '詳細を閉じる' : '詳細を開く';
 }
 
 function coverageMetadata(font) {
@@ -426,12 +590,23 @@ function renderCards() {
             <li>文字幅: ${escapeHtml(font.attributes.width)}</li>
             <li>書体分類: ${escapeHtml(font.attributes.classification)}</li>
             <li>利用環境: ${escapeHtml(font.attributes.environment)}</li>
-            <li>フォント機能: ${font.attributes.features.length > 0 ? font.attributes.features.map(escapeHtml).join(' / ') : '未調査'}</li>
+            <li>取得元: ${escapeHtml(font.fontOrigin)} / ${escapeHtml(font.attributes.sourceKind)} (${escapeHtml(font.attributes.source)})</li>
+            <li>OpenType機能: ${openTypeFeatureSummary(font)}</li>
             ${officialMetadataHtml(font)}
             ${memoIntegration ? `
               <li>言語情報: ラテン ${languageStatusLabel(font.languages.latin)} / 日本語 ${languageStatusLabel(font.languages.japanese)} / 簡体字 ${languageStatusLabel(font.languages.simplifiedChinese)} / 繁体字 ${languageStatusLabel(font.languages.traditionalChinese)} / 韓国語 ${languageStatusLabel(font.languages.korean)}</li>
             ` : ''}
           </ul>
+        </div>
+        <div class="footer-block opentype-feature-block">
+          <h4>OpenType機能</h4>
+          <button type="button" class="open-type-toggle" data-font-name="${escapeHtml(font.name)}" aria-expanded="false" aria-controls="open-type-${escapeHtml(font.id)}" aria-label="${escapeHtml(font.name)}のOpenType機能を開く">
+            <span class="open-type-toggle-label">詳細を表示</span>
+            <span class="open-type-toggle-icon" aria-hidden="true">▸</span>
+          </button>
+          <div id="open-type-${escapeHtml(font.id)}" class="open-type-feature-panel" role="region" aria-label="${escapeHtml(font.name)}のOpenType機能">
+            ${openTypeFeaturePanelContent(font)}
+          </div>
         </div>
         <div class="footer-block">
           <h4>注意点</h4>
@@ -447,6 +622,17 @@ function renderCards() {
       memoNexusStatus.textContent = `${font.name}を選択しました。内容を確認してMemo Nexusへ戻れます。`;
       renderCards();
     });
+    const openTypeToggle = card.querySelector('.open-type-toggle');
+    const openTypePanel = card.querySelector('.open-type-feature-panel');
+    if (openTypeToggle && openTypePanel) {
+      const isOpen = Boolean(state.openTypeFeaturePanels[font.id]);
+      updateOpenTypePanelState(openTypeToggle, openTypePanel, isOpen);
+      openTypeToggle.addEventListener('click', () => {
+        const nextOpen = !state.openTypeFeaturePanels[font.id];
+        state.openTypeFeaturePanels[font.id] = nextOpen;
+        updateOpenTypePanelState(openTypeToggle, openTypePanel, nextOpen);
+      });
+    }
     cardGrid.appendChild(card);
   });
 }

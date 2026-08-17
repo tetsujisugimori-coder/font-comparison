@@ -9,6 +9,7 @@
 - 通常、固定マス、実幅枠、詳細の4表示モード
 - 日本語、英語、繁体字、簡体字、判別、記号、コードの見本
 - cmap解析で未収録と確認できた文字の薄い表示
+- OpenType機能情報を「OpenType機能」として、カードごとに折りたたみ表示
 - KaTeX数式フォント専用ビュー（51用例）
 - PC、狭幅、スマートフォン、OSダークモード対応
 - Memo Nexusから比較文章を受け取り、検証済みURLへ選択結果を返す連携モード
@@ -38,6 +39,13 @@
 - フォントファイル自体はリポジトリに含めません。
 - Cascadia Codeは解析環境にファイルがなかったため、現在のデータでは `unknown` です。自動ダウンロードは行いません。
 - このアプリで登録・解析するMS Minchoは等幅です。MS PMinchoは別フェイスのプロポーショナル書体であり、混同しません。
+
+## OpenType機能表示
+
+- 各フォントカードの属性欄に「OpenType機能」を追加し、`収録確認済み` と `未確認` を要約表示します。
+- カードごとの `OpenType機能` ボタンで展開/折りたたみを切り替えます。
+- 展開時は OpenType タグ、機能名、対応状況（収録確認済み／未収録／未確認）と短い説明を表示します。
+- システムフォントもWebフォントも同じカード生成処理で表示し、`Noto Sans JP` も同一UIで確認対象にしています。
 
 ## cmapデータの再生成
 
@@ -111,14 +119,17 @@ python -m py_compile analyze_font_cmap.py
 
 ## 公式情報とライセンス
 
-カードの文字体系情報は、各[Microsoft Typography font list](https://learn.microsoft.com/en-us/typography/font-list/)と[Cascadia Code公式リポジトリ](https://github.com/microsoft/cascadia-code)を基準にしています。
+カードの文字体系情報は、各[Microsoft Typography font list](https://learn.microsoft.com/en-us/typography/font-list/)と[Cascadia Code公式リポジトリ](https://github.com/microsoft/cascadia-code)、[Google Fonts Noto Sans JP](https://fonts.google.com/noto/specimen/Noto+Sans+JP)を基準にしています。
 
 Microsoft製品に付属するフォントは「Microsoft製品付属（再配布は別途ライセンス確認）」と表示します。製品への収録だけを根拠に「フリー」や「商用利用自由」とは扱いません。Cascadia Codeは公式[LICENSE](https://github.com/microsoft/cascadia-code/blob/main/LICENSE)で確認できる `SIL Open Font License 1.1` を表示します。
+
+- Noto Sans JP は [Google Fonts](https://fonts.google.com/noto/specimen/Noto+Sans+JP)経由のWebフォントとして利用しており、ライセンスは `SIL Open Font License 1.1` です。取得元の記載は `font` 定義と公式情報欄に反映しています。
 
 ## 既知の制約
 
 - 静的cmapは解析した1バージョン・1フェイスの情報で、閲覧環境との差異を自動検出しません。
 - cmapにコードポイントがあっても、字形品質、OpenType機能、異体字シーケンス、言語全体の完全対応までは保証しません。
 - 結合文字や異体字セレクタも削除せずコードポイント単位で保持しますが、書記素クラスタ全体の描画成否は判定しません。
+- OpenType機能は「収録確認済み」「未収録」「未確認」を分けて管理し、未調査を未収録として断定しません。
 - CSSフォールバック先と、画面上で最終的に使われたフォント名は特定しません。
 - フォントのライセンスを自動判定しません。

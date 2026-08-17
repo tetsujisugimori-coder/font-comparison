@@ -520,6 +520,120 @@ select {
   color: var(--text);
 }
 
+.opentype-feature-block {
+  position: relative;
+}
+
+.open-type-toggle {
+  width: 100%;
+  display: inline-flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px 10px;
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.open-type-toggle:focus-visible {
+  outline: 3px solid rgba(76, 110, 245, 0.32);
+  outline-offset: 2px;
+}
+
+.open-type-toggle-icon {
+  display: inline-flex;
+  align-items: center;
+  transition: transform 0.2s ease;
+}
+
+.open-type-toggle.is-open .open-type-toggle-icon {
+  transform: rotate(90deg);
+}
+
+.open-type-feature-panel {
+  margin-top: 0;
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0.85;
+  transform: translateY(-2px);
+  transition:
+    max-height 0.22s ease,
+    opacity 0.2s ease,
+    margin-top 0.2s ease,
+    transform 0.2s ease;
+}
+
+.open-type-feature-panel.is-open {
+  margin-top: 6px;
+  max-height: 900px;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.open-type-feature-list {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+  margin: 0;
+}
+
+.open-type-feature-item {
+  display: grid;
+  grid-template-columns: 56px 1fr 86px;
+  gap: 8px 10px;
+  align-items: center;
+  border-radius: 8px;
+  border: 1px solid var(--soft-border);
+  padding: 8px 10px;
+  background: var(--panel);
+}
+
+.open-type-feature-item .feature-tag {
+  font-family: Consolas, "Cascadia Code", monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.open-type-feature-item .feature-title {
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.open-type-feature-item .feature-status {
+  justify-self: end;
+  font-size: 0.76rem;
+  color: var(--muted);
+}
+
+.open-type-feature-item .feature-description {
+  margin: 0;
+  grid-column: 1 / -1;
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.open-type-feature-item.status-unsupported {
+  opacity: 0.6;
+}
+
+.open-type-feature-item.status-unknown .feature-status {
+  color: #6b7280;
+}
+
+.open-type-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
 .notes {
   margin: 0;
   font-size: 0.92rem;
@@ -984,6 +1098,13 @@ select {
 
   .math-result .katex {
     font-size: 1.12em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .open-type-toggle-icon,
+  .open-type-feature-panel {
+    transition: none;
   }
 }
 

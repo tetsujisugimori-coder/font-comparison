@@ -84,3 +84,32 @@ test('連携UIは狭幅とOSダークモードへ対応する', () => {
   assert.match(css, /@media \(max-width: 699px\)[\s\S]*?\.memo-integration-panel/);
   assert.match(css, /\.recommendation-badge\.recommended/);
 });
+
+test('OpenType機能はカードごとの折りたたみトグルとして表示される', () => {
+  assert.match(app, /openTypeFeaturePanels/);
+  assert.match(app, /openTypeFeatureSummary\(font\)/);
+  assert.match(app, /openTypeFeatureRows\(font\)/);
+  assert.match(app, /function updateOpenTypePanelState/);
+  assert.match(app, /open-type-toggle/);
+  assert.match(app, /aria-expanded="\$?\{?[^"]+\}?/);
+  assert.match(app, /aria-controls="open-type-/);
+  assert.match(app, /data-font-name="\$\{escapeHtml\(font\.name\)\}"/);
+});
+
+test('OpenType機能は説明を共通辞書で表示し、未確認は未収録と断定しない', () => {
+  assert.match(app, /openTypeFeatureDefinitions/);
+  assert.match(app, /収録確認済み/);
+  assert.match(app, /未収録/);
+  assert.match(app, /未確認/);
+  assert.match(app, /OpenType機能は未確認です。収録状況を確認できていません。/);
+  assert.doesNotMatch(app, /if \(font\.attributes\.openType\.verified === false\) return '未収録'/);
+});
+
+test('Webフォントも同じカード構造でOpenType情報を扱う', () => {
+  assert.match(app, /'noto-sans-jp-web'/);
+  assert.match(app, /sourceType: 'web'/);
+  assert.match(app, /fontOrigin: 'Web'/);
+  assert.match(app, /sourceType: 'system'/);
+  assert.match(app, /font\.attributes\.sourceKind/);
+  assert.match(html, /fonts\.googleapis\.com/);
+});
