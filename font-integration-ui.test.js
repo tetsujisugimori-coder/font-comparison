@@ -85,31 +85,44 @@ test('連携UIは狭幅とOSダークモードへ対応する', () => {
   assert.match(css, /\.recommendation-badge\.recommended/);
 });
 
-test('OpenType機能はカードごとの折りたたみトグルとして表示される', () => {
-  assert.match(app, /openTypeFeaturePanels/);
-  assert.match(app, /openTypeFeatureSummary\(font\)/);
+test('OpenType機能はカードの展開トグルではなく共通ダイアログへ変更されている', () => {
+  assert.doesNotMatch(app, /openTypeFeaturePanels/);
+  assert.doesNotMatch(app, /open-type-toggle/);
+  assert.match(app, /openTypeFeatureDialog/);
+  assert.match(app, /openTypeFeatureDialogForFont/);
   assert.match(app, /openTypeFeatureRows\(font\)/);
-  assert.match(app, /function updateOpenTypePanelState/);
-  assert.match(app, /open-type-toggle/);
-  assert.match(app, /aria-expanded="\$?\{?[^"]+\}?/);
-  assert.match(app, /aria-controls="open-type-/);
-  assert.match(app, /data-font-name="\$\{escapeHtml\(font\.name\)\}"/);
+  assert.match(app, /aria-controls="openTypeFeatureDialog"/);
+  assert.match(app, /OpenType機能の詳細/);
 });
 
-test('OpenType機能は説明を共通辞書で表示し、未確認は未収録と断定しない', () => {
+test('OpenType機能は共通辞書で公開され、未確認タグは掲載しない', () => {
   assert.match(app, /openTypeFeatureDefinitions/);
-  assert.match(app, /収録確認済み/);
-  assert.match(app, /未収録/);
-  assert.match(app, /未確認/);
-  assert.match(app, /OpenType機能は未確認です。収録状況を確認できていません。/);
-  assert.doesNotMatch(app, /if \(font\.attributes\.openType\.verified === false\) return '未収録'/);
+  assert.match(app, /任意/);
+  assert.match(app, /自動/);
+  assert.match(app, /フォント固有/);
+  assert.doesNotMatch(app, /説明未確認/);
+  assert.doesNotMatch(app, /未確認のみを/);
+  assert.match(app, /openTypeUnparsedMessage =/);
+  assert.match(app, /openTypeNoFeatureMessage =/);
 });
 
 test('Webフォントも同じカード構造でOpenType情報を扱う', () => {
   assert.match(app, /'noto-sans-jp-web'/);
   assert.match(app, /sourceType: 'web'/);
-  assert.match(app, /fontOrigin: 'Web'/);
+  assert.match(app, /fontOrigin: 'Webブラウザ'/);
   assert.match(app, /sourceType: 'system'/);
   assert.match(app, /font\.attributes\.sourceKind/);
   assert.match(html, /fonts\.googleapis\.com/);
+});
+
+test('OpenType機能ダイアログにはボタン、一覧、説明欄の要素があり、同一ダイアログを再利用する', () => {
+  assert.match(html, /id="openTypeFeatureDialog"/);
+  assert.match(html, /openTypeFeatureDialogSummary/);
+  assert.match(html, /openTypeFeatureDialogMeta/);
+  assert.match(html, /openTypeFeatureDialogFeatureList/);
+  assert.match(html, /openTypeFeatureDialogFeatureDetail/);
+  assert.match(app, /openTypeFeatureDialogForFont\(font, openTypeButton\)/);
+  assert.match(app, /openTypeDialogFeatureList\.addEventListener\('/);
+  assert.match(css, /\.open-type-feature-button/);
+  assert.match(css, /\.open-type-dialog/);
 });
