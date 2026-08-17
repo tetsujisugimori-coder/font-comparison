@@ -7,6 +7,8 @@ const test = require('node:test');
 const html = fs.readFileSync('index.html', 'utf8');
 const app = fs.readFileSync('app.js', 'utf8');
 const css = fs.readFileSync('style.css', 'utf8');
+const katexData = fs.readFileSync('katex-data.js', 'utf8');
+const katexPage = fs.readFileSync('katex-page.js', 'utf8');
 
 test('Memo Nexus連携パネルは通常起動時に非表示で必要な操作を持つ', () => {
   assert.match(html, /id="memoNexusPanel"[^>]*hidden/);
@@ -16,9 +18,10 @@ test('Memo Nexus連携パネルは通常起動時に非表示で必要な操作�
   assert.match(html, /integration-utils\.js/);
 });
 
-test('受け取った比較文章はtextContentまたはescapeHtmlを経由しHTMLとして解釈しない', () => {
+test('受け取った比較文章はtextContentまたは安全な文字描画を経由しHTMLとして解釈しない', () => {
   assert.match(app, /memoNexusSample\.textContent = memoIntegration\.sample/);
-  assert.match(app, /escapeHtml\(memoIntegration\.sample\)/);
+  assert.match(app, /appendSection\('Memo Nexusの比較文章', memoIntegration\.sample/);
+  assert.match(app, /coverageApi\.appendCoverageText/);
   assert.doesNotMatch(app, /memoNexusSample\.innerHTML\s*=/);
 });
 
@@ -30,10 +33,43 @@ test('連携モードでは全フォントを用途別に並べ、明示選択�
   assert.match(app, /location\.assign\(integrationApi\.buildMemoNexusReturnUrl/);
 });
 
-test('未確認情報を未対応と断定せずメタデータとして表示する', () => {
+test('未確認情報を未対応と断定せず公式メタデータと分けて表示する', () => {
   assert.match(app, /languages: \{ latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' \}/);
-  assert.match(app, /license: '未確認'/);
-  assert.match(app, /配布元URL:.*未確認/s);
+  assert.match(app, /SIL Open Font License 1\.1/);
+  assert.match(app, /Microsoft製品付属（再配布は別途ライセンス確認）/);
+  assert.match(app, /収録文字情報は未確認です。未収録とは判定していません。/);
+  assert.match(app, /公式情報:/);
+});
+
+test('収録判定データと文字判定スクリプトをapp.jsより先に読み込む', () => {
+  assert.match(html, /font-coverage-data\.js[\s\S]*font-coverage\.js[\s\S]*app\.js/);
+});
+
+test('通常・詳細・固定マス・実幅枠へ同じ文字判定を適用する', () => {
+  assert.match(app, /state\.mode === 'fixed'[\s\S]*appendCoverageText/);
+  assert.match(app, /state\.mode === 'width'[\s\S]*appendCoverageText/);
+  assert.match(app, /for \(const section of samples\.normal\)[\s\S]*appendSection/);
+  assert.match(app, /state\.mode === 'detail'/);
+  assert.match(css, /\.unsupported-glyph\s*\{[\s\S]*opacity:\s*0\.3/);
+});
+
+test('通常モードの初期3カードと4表示モードを維持する', () => {
+  assert.match(app, /selectedIds: \['segoe-ui', 'yu-gothic-ui', 'consolas'\]/);
+  for (const mode of ['normal', 'fixed', 'width', 'detail']) {
+    assert.match(html, new RegExp(`data-mode="${mode}"`));
+  }
+});
+
+test('凡例は未収録がある解析済みカードだけに出し、未解析は未確認とする', () => {
+  assert.match(app, /if \(coverage\.status !== 'analyzed'\)[\s\S]*収録文字情報は未確認/);
+  assert.match(app, /if \(unsupportedCount === 0\) return null/);
+  assert.match(app, /薄い文字は、このフォントに未収録です。別のフォントで代替表示されています。/);
+});
+
+test('KaTeXの51用例と表示切替処理を維持する', () => {
+  assert.equal((katexData.match(/\{ id: '[^']+', category:/g) || []).length, 51);
+  assert.match(katexPage, /viewButtons\.forEach/);
+  assert.match(katexPage, /setView\('katex'/);
 });
 
 test('連携UIは狭幅とOSダークモードへ対応する', () => {

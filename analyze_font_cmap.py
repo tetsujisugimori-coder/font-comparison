@@ -1,44 +1,269 @@
-from fontTools.ttLib import TTFont
+"""対象フォントの cmap を解析し、Web アプリ用の圧縮範囲データを生成する。"""
 
-FONT_PATH = r"C:\Windows\Fonts\bauhs93.ttf"
+from __future__ import annotations
 
-ranges = {
-    "基本ラテン": (0x0020, 0x007E),
-    "ラテン1補助": (0x00A0, 0x00FF),
-    "ラテン拡張A": (0x0100, 0x017F),
-    "ラテン拡張B": (0x0180, 0x024F),
-    "ギリシャ文字": (0x0370, 0x03FF),
-    "キリル文字": (0x0400, 0x04FF),
-    "一般句読点": (0x2000, 0x206F),
-    "通貨記号": (0x20A0, 0x20CF),
-    "矢印": (0x2190, 0x21FF),
-    "数学記号": (0x2200, 0x22FF),
-    "CJK記号・句読点": (0x3000, 0x303F),
-    "ひらがな": (0x3040, 0x309F),
-    "カタカナ": (0x30A0, 0x30FF),
-    "CJK統合漢字": (0x4E00, 0x9FFF),
-    "私用領域": (0xE000, 0xF8FF),
+import argparse
+import json
+import os
+import sys
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Iterable
+
+from fontTools.ttLib import TTCollection, TTFont, TTLibError
+
+
+@dataclass(frozen=True)
+class FontTarget:
+    label: str
+    candidates: tuple[str, ...]
+    face_names: tuple[str, ...]
+
+
+TARGETS: dict[str, FontTarget] = {
+    "segoe-ui": FontTarget("Segoe UI", ("segoeui.ttf",), ("Segoe UI", "Segoe UI Regular")),
+    "yu-gothic-ui": FontTarget(
+        "Yu Gothic UI",
+        ("YuGothM.ttc", "YuGothR.ttc", "YuGothL.ttc", "YuGothB.ttc"),
+        ("Yu Gothic UI Regular", "Yu Gothic UI"),
+    ),
+    "meiryo": FontTarget("Meiryo", ("meiryo.ttc",), ("Meiryo",)),
+    "ms-mincho": FontTarget("MS Mincho", ("msmincho.ttc",), ("MS Mincho",)),
+    "consolas": FontTarget("Consolas", ("consola.ttf",), ("Consolas",)),
+    "cascadia-code": FontTarget(
+        "Cascadia Code",
+        ("CascadiaCode.ttf", "CascadiaCodePL.ttf", "CascadiaMono.ttf"),
+        ("Cascadia Code", "Cascadia Code Regular"),
+    ),
+    "courier-new": FontTarget("Courier New", ("cour.ttf",), ("Courier New", "Courier New Regular")),
+    "times-new-roman": FontTarget(
+        "Times New Roman", ("times.ttf",), ("Times New Roman", "Times New Roman Regular")
+    ),
 }
 
-font = TTFont(FONT_PATH)
 
-try:
-    cmap = font.getBestCmap()
+def name_values(font: TTFont, name_id: int) -> list[str]:
+    values: list[str] = []
+    for record in font["name"].names:
+        if record.nameID != name_id:
+            continue
+        try:
+            value = record.toUnicode().strip()
+        except UnicodeError:
+            continue
+        if value and value not in values:
+            values.append(value)
+    return values
 
-    if cmap is None:
-        print("Unicode対応のcmapが見つかりませんでした。")
-    else:
-        print("フォントファイル:", FONT_PATH)
-        print("Unicode対応文字数:", len(cmap))
-        print()
 
-        for label, (start, end) in ranges.items():
-            count = sum(
-                1
-                for code_point in cmap
-                if start <= code_point <= end
+def face_metadata(font: TTFont) -> dict[str, object]:
+    family_names = name_values(font, 1)
+    subfamily_names = name_values(font, 2)
+    full_names = name_values(font, 4)
+    postscript_names = name_values(font, 6)
+    versions = name_values(font, 5)
+    return {
+        "familyNames": family_names,
+        "subfamilyNames": subfamily_names,
+        "fullNames": full_names,
+        "postscriptNames": postscript_names,
+        "version": versions[0] if versions else f"Version {font['head'].fontRevision:g}",
+    }
+
+
+def face_score(metadata: dict[str, object], expected_names: Iterable[str]) -> int:
+    expected = [value.casefold() for value in expected_names]
+    full_names = [value.casefold() for value in metadata["fullNames"]]
+    family_names = [value.casefold() for value in metadata["familyNames"]]
+    postscript_names = [value.casefold() for value in metadata["postscriptNames"]]
+    for index, candidate in enumerate(expected):
+        priority = len(expected) - index
+        if candidate in full_names:
+            return 300 + priority
+        if candidate in family_names:
+            return 200 + priority
+        if candidate.replace(" ", "-") in postscript_names or candidate.replace(" ", "") in postscript_names:
+            return 100 + priority
+    return 0
+
+
+def open_faces(path: Path) -> list[TTFont]:
+    if path.suffix.casefold() == ".ttc":
+        return TTCollection(path, lazy=True).fonts
+    return [TTFont(path, lazy=True)]
+
+
+def select_face(path: Path, target: FontTarget, requested_face: str | None) -> tuple[TTFont, int, dict[str, object], list[TTFont]]:
+    faces = open_faces(path)
+    expected_names = (requested_face,) if requested_face else target.face_names
+    matches: list[tuple[int, int, TTFont, dict[str, object]]] = []
+    for index, font in enumerate(faces):
+        metadata = face_metadata(font)
+        matches.append((face_score(metadata, expected_names), index, font, metadata))
+    matches.sort(key=lambda item: (-item[0], item[1]))
+    score, index, font, metadata = matches[0]
+    if score == 0:
+        available = [name for _, _, _, item in matches for name in item["fullNames"]]
+        for item in faces:
+            item.close()
+        raise ValueError(
+            f"対象フェイス {target.label!r} を {path.name} から選択できません。"
+            f" 内部フェイス: {', '.join(available) or '名前なし'}"
+        )
+    return font, index, metadata, faces
+
+
+def compress_codepoints(codepoints: Iterable[int]) -> list[list[int]]:
+    points = sorted(set(codepoints))
+    if not points:
+        return []
+    ranges: list[list[int]] = []
+    start = previous = points[0]
+    for codepoint in points[1:]:
+        if codepoint == previous + 1:
+            previous = codepoint
+            continue
+        ranges.append([start, previous])
+        start = previous = codepoint
+    ranges.append([start, previous])
+    return ranges
+
+
+def parse_assignments(values: list[str], option: str) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for value in values:
+        if "=" not in value:
+            raise ValueError(f"{option} は FONT_ID=VALUE 形式で指定してください: {value}")
+        font_id, assigned = value.split("=", 1)
+        if font_id not in TARGETS:
+            raise ValueError(f"未知のフォントIDです: {font_id}")
+        parsed[font_id] = assigned
+    return parsed
+
+
+def default_font_path(target: FontTarget, font_dir: Path) -> Path | None:
+    entries = {entry.name.casefold(): entry for entry in font_dir.iterdir()} if font_dir.is_dir() else {}
+    for candidate in target.candidates:
+        if candidate.casefold() in entries:
+            return entries[candidate.casefold()]
+    return None
+
+
+def analyze_font(target: FontTarget, path: Path, requested_face: str | None) -> dict[str, object]:
+    font, face_index, metadata, all_faces = select_face(path, target, requested_face)
+    try:
+        cmap = font.getBestCmap()
+        if cmap is None:
+            raise ValueError("Unicode対応のcmapが見つかりません。")
+        return {
+            "fontName": target.label,
+            "status": "analyzed",
+            "fileName": path.name,
+            "faceIndex": face_index,
+            "faceName": (metadata["fullNames"] or metadata["familyNames"] or ["未確認"])[0],
+            "fontVersion": metadata["version"],
+            "codepointCount": len(cmap),
+            "ranges": compress_codepoints(cmap.keys()),
+        }
+    finally:
+        for item in all_faces:
+            item.close()
+
+
+def build_output(font_paths: dict[str, str], face_names: dict[str, str], font_dir: Path) -> dict[str, object]:
+    generated_at = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+    fonts: dict[str, object] = {}
+    for font_id, target in TARGETS.items():
+        configured_path = Path(font_paths[font_id]).expanduser() if font_id in font_paths else None
+        path = configured_path or default_font_path(target, font_dir)
+        if path is None or not path.is_file():
+            fonts[font_id] = {
+                "fontName": target.label,
+                "status": "not-analyzed",
+                "fileName": path.name if path else None,
+                "faceIndex": None,
+                "faceName": None,
+                "fontVersion": None,
+                "codepointCount": None,
+                "ranges": [],
+                "reason": "フォントファイルが見つかりません。",
+            }
+            continue
+        try:
+            fonts[font_id] = analyze_font(target, path, face_names.get(font_id))
+        except (OSError, TTLibError, ValueError, KeyError) as error:
+            fonts[font_id] = {
+                "fontName": target.label,
+                "status": "not-analyzed",
+                "fileName": path.name,
+                "faceIndex": None,
+                "faceName": None,
+                "fontVersion": None,
+                "codepointCount": None,
+                "ranges": [],
+                "reason": str(error),
+            }
+    return {"schemaVersion": 1, "generatedAt": generated_at, "fonts": fonts}
+
+
+def write_javascript(output_path: Path, data: dict[str, object]) -> None:
+    serialized = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
+    output_path.write_text(
+        "/* analyze_font_cmap.py で生成。フォントファイル自体は含みません。 */\n"
+        f"window.FontCoverageData = {serialized};\n",
+        encoding="utf-8",
+    )
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--font",
+        action="append",
+        default=[],
+        metavar="FONT_ID=PATH",
+        help="フォントIDごとのTTF/OTF/TTCパス。複数回指定可能。",
+    )
+    parser.add_argument(
+        "--face",
+        action="append",
+        default=[],
+        metavar="FONT_ID=INTERNAL_NAME",
+        help="TTC等で選ぶ内部ファミリー名またはフルネーム。複数回指定可能。",
+    )
+    parser.add_argument(
+        "--font-dir",
+        type=Path,
+        default=Path(os.environ.get("WINDIR", r"C:\Windows")) / "Fonts",
+        help="明示パスがない場合に既知のファイル名を探すフォントディレクトリ。",
+    )
+    parser.add_argument("--output", type=Path, default=Path("font-coverage-data.js"))
+    return parser.parse_args()
+
+
+def main() -> int:
+    args = parse_args()
+    try:
+        font_paths = parse_assignments(args.font, "--font")
+        face_names = parse_assignments(args.face, "--face")
+        data = build_output(font_paths, face_names, args.font_dir)
+        write_javascript(args.output, data)
+    except (OSError, ValueError) as error:
+        print(f"エラー: {error}", file=sys.stderr)
+        return 2
+
+    for font_id, result in data["fonts"].items():
+        if result["status"] == "analyzed":
+            print(
+                f"{font_id}: {result['fileName']} / {result['faceName']} / "
+                f"{result['fontVersion']} / {result['codepointCount']} codepoints"
             )
-            print(f"{label}: {count}")
+        else:
+            print(f"{font_id}: 解析未実施 ({result['reason']})")
+    print(f"出力: {args.output}")
+    return 0
 
-finally:
-    font.close()
+
+if __name__ == "__main__":
+    raise SystemExit(main())
