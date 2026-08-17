@@ -56,7 +56,7 @@ const fonts = [
     uses: ['日本語本文', '印刷', '長文'],
     attributes: {
       supports: ['基本ラテン対応', '日本語対応', 'Windows標準'],
-      width: 'プロポーショナル',
+      width: '等幅',
       classification: '明朝体 / セリフ',
       environment: 'Windows標準',
       features: []
@@ -164,7 +164,7 @@ const memoFontMetadata = {
     memoCssFamily: '"Cascadia Code", Consolas, monospace',
     categoryType: 'monospace',
     recommendedFor: ['code'],
-    languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
+    languages: { latin: 'unknown', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'courier-new': {
     memoCssFamily: '"Courier New", Consolas, monospace',
@@ -180,9 +180,51 @@ const memoFontMetadata = {
   }
 };
 
-fonts.forEach((font) => Object.assign(font, memoFontMetadata[font.id], {
-  license: '未確認',
-  sourceUrl: ''
+const officialFontMetadata = {
+  'segoe-ui': {
+    officialScripts: ['ラテン', 'ギリシャ', 'キリル', 'アルメニア', 'グルジア', 'アラビア', 'ヘブライ', 'リス'],
+    license: 'Microsoft製品付属（再配布は別途ライセンス確認）',
+    sourceUrl: 'https://learn.microsoft.com/en-us/typography/font-list/segoe-ui'
+  },
+  'yu-gothic-ui': {
+    officialScripts: ['日本語（漢字・ひらがな・カタカナ）', 'ラテン', 'ギリシャ', 'キリル'],
+    license: 'Microsoft製品付属（再配布は別途ライセンス確認）',
+    sourceUrl: 'https://learn.microsoft.com/en-us/typography/font-list/yu-gothic'
+  },
+  meiryo: {
+    officialScripts: ['日本語（漢字・ひらがな・カタカナ）', 'ラテン', 'ギリシャ', 'キリル'],
+    license: 'Microsoft製品付属（再配布は別途ライセンス確認）',
+    sourceUrl: 'https://learn.microsoft.com/en-us/typography/font-list/meiryo'
+  },
+  'ms-mincho': {
+    officialScripts: ['日本語（漢字・ひらがな・カタカナ）', 'ラテン', 'ギリシャ', 'キリル'],
+    license: 'Microsoft製品付属（再配布は別途ライセンス確認）',
+    sourceUrl: 'https://learn.microsoft.com/en-us/typography/font-list/ms-mincho'
+  },
+  consolas: {
+    officialScripts: ['ラテン', 'ギリシャ', 'キリル', 'アルメニア'],
+    license: 'Microsoft製品付属（再配布は別途ライセンス確認）',
+    sourceUrl: 'https://learn.microsoft.com/en-us/typography/font-list/consolas'
+  },
+  'cascadia-code': {
+    officialScripts: ['文字体系一覧は公式リポジトリで未確認'],
+    license: 'SIL Open Font License 1.1',
+    sourceUrl: 'https://github.com/microsoft/cascadia-code'
+  },
+  'courier-new': {
+    officialScripts: ['ラテン', 'ギリシャ', 'キリル', 'アルメニア', 'アラビア（補助）', 'ヘブライ（補助）'],
+    license: 'Microsoft製品付属（再配布は別途ライセンス確認）',
+    sourceUrl: 'https://learn.microsoft.com/en-us/typography/font-list/courier-new'
+  },
+  'times-new-roman': {
+    officialScripts: ['ラテン', 'ギリシャ', 'キリル', 'アルメニア', 'アラビア（補助）', 'ヘブライ（補助）'],
+    license: 'Microsoft製品付属（再配布は別途ライセンス確認）',
+    sourceUrl: 'https://learn.microsoft.com/en-us/typography/font-list/times-new-roman'
+  }
+};
+
+fonts.forEach((font) => Object.assign(font, memoFontMetadata[font.id], officialFontMetadata[font.id], {
+  metadataConfirmedAt: '2026-08-18'
 }));
 
 const samples = {
@@ -209,6 +251,8 @@ const state = {
 const selector = document.getElementById('fontSelector');
 const cardGrid = document.getElementById('cardGrid');
 const integrationApi = window.FontComparisonIntegration;
+const coverageApi = window.FontCoverage;
+const coverageData = window.FontCoverageData;
 const memoIntegration = integrationApi.parseMemoNexusParams(location.search, fonts.map((font) => font.id));
 const memoNexusPanel = document.getElementById('memoNexusPanel');
 const memoNexusContext = document.getElementById('memoNexusContext');
@@ -246,14 +290,69 @@ function orderedFonts(items) {
   return [...items].sort((a, b) => Number(isRecommended(b)) - Number(isRecommended(a)));
 }
 
+function coverageMetadata(font) {
+  return coverageData?.fonts?.[font.id] || {
+    status: 'not-analyzed',
+    fileName: null,
+    faceName: null,
+    fontVersion: null
+  };
+}
+
+function coverageStatusLabel(coverage) {
+  return coverage.status === 'analyzed' ? '解析済み' : '解析未実施';
+}
+
+function officialMetadataHtml(font) {
+  const coverage = coverageMetadata(font);
+  const sourceUrl = escapeHtml(font.sourceUrl);
+  return `
+    <li>公式に確認した文字体系: ${font.officialScripts.map(escapeHtml).join(' / ')}</li>
+    <li>見本文字の収録判定: ${coverageStatusLabel(coverage)}（言語対応とは別のcmap情報）</li>
+    <li>解析フォント: ${escapeHtml(coverage.fontVersion || '未確認')} / ${escapeHtml(coverage.fileName || '未確認')} / ${escapeHtml(coverage.faceName || '内部フェイス未確認')}</li>
+    <li>確認日: ${escapeHtml(font.metadataConfirmedAt)}</li>
+    <li>ライセンス: ${escapeHtml(font.license)}</li>
+    <li>公式情報: <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer">${sourceUrl}</a></li>
+  `;
+}
+
+function createSampleSection(title, text, font, lang = null, extraClass = '') {
+  const section = document.createElement('section');
+  section.className = `sample-section${extraClass ? ` ${extraClass}` : ''}`;
+  const heading = document.createElement('h4');
+  heading.className = 'section-title';
+  heading.textContent = title;
+  const content = document.createElement('div');
+  content.className = 'sample-text';
+  if (lang) content.lang = lang;
+  const unsupportedCount = coverageApi.appendCoverageText(content, text, font.id, coverageData);
+  section.append(heading, content);
+  return { section, unsupportedCount };
+}
+
+function createCoverageLegend(font, unsupportedCount) {
+  const coverage = coverageMetadata(font);
+  if (coverage.status !== 'analyzed') {
+    const unknown = document.createElement('p');
+    unknown.className = 'coverage-legend coverage-unknown';
+    unknown.textContent = '収録文字情報は未確認です。未収録とは判定していません。';
+    return unknown;
+  }
+  if (unsupportedCount === 0) return null;
+  const legend = document.createElement('p');
+  legend.className = 'coverage-legend';
+  legend.textContent = '薄い文字は、解析した対象フォントに未収録です。ブラウザが別のフォントによる代替表示を試みます。';
+  return legend;
+}
+
 function renderSelector() {
   selector.innerHTML = '';
   orderedFonts(fonts).forEach((font) => {
     const label = document.createElement('label');
     label.className = 'font-option';
     label.innerHTML = `
-      <input type="checkbox" value="${font.id}" ${state.selectedIds.includes(font.id) ? 'checked' : ''} />
-      <span>${font.name}</span>
+      <input type="checkbox" value="${escapeHtml(font.id)}" ${state.selectedIds.includes(font.id) ? 'checked' : ''} />
+      <span>${escapeHtml(font.name)}</span>
     `;
     label.querySelector('input').addEventListener('change', (event) => {
       if (event.target.checked) {
@@ -284,6 +383,7 @@ function renderCards() {
   selectedFonts.forEach((font) => {
     const card = document.createElement('article');
     card.className = `font-card${font.id === selectedMemoFontId ? ' memo-selected' : ''}`;
+    card.dataset.fontId = font.id;
     card.style.setProperty('--font-size', `${state.fontSize}px`);
     card.style.setProperty('--font-weight', `${state.fontWeight}`);
     card.style.setProperty('--line-height', `${state.lineHeight}`);
@@ -296,52 +396,51 @@ function renderCards() {
           <span class="recommendation-badge ${isRecommended(font) ? 'recommended' : ''}">
             ${isRecommended(font) ? 'この用途に推奨' : '推奨情報なし'}
           </span>
-          <button type="button" class="select-memo-font" data-font-id="${font.id}" aria-pressed="${font.id === selectedMemoFontId}">
+          <button type="button" class="select-memo-font" data-font-id="${escapeHtml(font.id)}" aria-pressed="${font.id === selectedMemoFontId}">
             ${font.id === selectedMemoFontId ? '選択中' : 'このフォントを選択'}
           </button>
         </div>
       ` : ''}
       <div class="font-card-header">
-        <h3 class="font-card-name">${font.name}</h3>
-        <p class="font-card-category">${font.category}</p>
+        <h3 class="font-card-name">${escapeHtml(font.name)}</h3>
+        <p class="font-card-category">${escapeHtml(font.category)}</p>
       </div>
-      <div class="sample-area">
-        ${renderSampleContent(font)}
-      </div>
+      <div class="sample-area"></div>
       <div class="card-footer">
         <div class="footer-block">
           <h4>印象</h4>
           <div class="tag-row">
-            ${font.impression.map((item) => `<span class="tag">${item}</span>`).join('')}
+            ${font.impression.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join('')}
           </div>
         </div>
         <div class="footer-block">
           <h4>向いている用途</h4>
           <div class="tag-row">
-            ${font.uses.map((item) => `<span class="tag">${item}</span>`).join('')}
+            ${font.uses.map((item) => `<span class="tag">${escapeHtml(item)}</span>`).join('')}
           </div>
         </div>
         <div class="footer-block">
           <h4>属性</h4>
           <ul class="attribute-list">
-            <li>対応文字: ${font.attributes.supports.join(' / ')}</li>
-            <li>文字幅: ${font.attributes.width}</li>
-            <li>書体分類: ${font.attributes.classification}</li>
-            <li>利用環境: ${font.attributes.environment}</li>
-            <li>フォント機能: ${font.attributes.features.length > 0 ? font.attributes.features.join(' / ') : '未調査'}</li>
+            <li>従来の概要: ${font.attributes.supports.map(escapeHtml).join(' / ')}</li>
+            <li>文字幅: ${escapeHtml(font.attributes.width)}</li>
+            <li>書体分類: ${escapeHtml(font.attributes.classification)}</li>
+            <li>利用環境: ${escapeHtml(font.attributes.environment)}</li>
+            <li>フォント機能: ${font.attributes.features.length > 0 ? font.attributes.features.map(escapeHtml).join(' / ') : '未調査'}</li>
+            ${officialMetadataHtml(font)}
             ${memoIntegration ? `
               <li>言語情報: ラテン ${languageStatusLabel(font.languages.latin)} / 日本語 ${languageStatusLabel(font.languages.japanese)} / 簡体字 ${languageStatusLabel(font.languages.simplifiedChinese)} / 繁体字 ${languageStatusLabel(font.languages.traditionalChinese)} / 韓国語 ${languageStatusLabel(font.languages.korean)}</li>
-              <li>ライセンス: ${font.license}</li>
-              <li>配布元URL: ${font.sourceUrl || '未確認'}</li>
             ` : ''}
           </ul>
         </div>
         <div class="footer-block">
           <h4>注意点</h4>
-          <p class="notes">${font.notes}</p>
+          <p class="notes">${escapeHtml(font.notes)}</p>
         </div>
       </div>
     `;
+
+    renderSampleContent(font, card.querySelector('.sample-area'));
 
     card.querySelector('.select-memo-font')?.addEventListener('click', () => {
       selectedMemoFontId = font.id;
@@ -352,63 +451,74 @@ function renderCards() {
   });
 }
 
-function renderSampleContent(font) {
-  const memoSample = memoIntegration?.sample
-    ? `
-      <section class="sample-section memo-passed-sample">
-        <h4 class="section-title">Memo Nexusの比較文章</h4>
-        <div class="sample-text">${escapeHtml(memoIntegration.sample)}</div>
-      </section>
-    `
-    : '';
+function renderSampleContent(font, sampleArea) {
+  let unsupportedCount = 0;
+  const appendSection = (title, text, lang = null, extraClass = '') => {
+    const rendered = createSampleSection(title, text, font, lang, extraClass);
+    unsupportedCount += rendered.unsupportedCount;
+    sampleArea.appendChild(rendered.section);
+  };
+
+  if (memoIntegration?.sample) {
+    appendSection('Memo Nexusの比較文章', memoIntegration.sample, null, 'memo-passed-sample');
+  }
 
   if (state.mode === 'fixed') {
-    const chars = ['あ', '漢', 'A', 'g', '0', '1', 'i', 'W'];
-    return `${memoSample}
-      <div class="fixed-grid">
-        ${chars.map((char) => `<div class="fixed-cell">${char}</div>`).join('')}
-      </div>
-    `;
+    const grid = document.createElement('div');
+    grid.className = 'fixed-grid';
+    for (const character of ['あ', '漢', 'A', 'g', '0', '1', 'i', 'W']) {
+      const cell = document.createElement('div');
+      cell.className = 'fixed-cell';
+      unsupportedCount += coverageApi.appendCoverageText(cell, character, font.id, coverageData);
+      grid.appendChild(cell);
+    }
+    sampleArea.appendChild(grid);
+  } else if (state.mode === 'width') {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'sample-text';
+    for (const row of ['iiiiiiiiii', 'WWWWWWWWWW', '1234567890']) {
+      const line = document.createElement('div');
+      line.className = 'width-line';
+      for (const character of row) {
+        const characterBox = document.createElement('span');
+        characterBox.className = 'width-char';
+        unsupportedCount += coverageApi.appendCoverageText(characterBox, character, font.id, coverageData);
+        line.appendChild(characterBox);
+      }
+      wrapper.appendChild(line);
+    }
+    sampleArea.appendChild(wrapper);
+  } else {
+    for (const section of samples.normal) {
+      appendSection(section.title, section.text, section.lang);
+    }
+    if (state.mode === 'detail') {
+      const section = document.createElement('section');
+      section.className = 'sample-section';
+      const heading = document.createElement('h4');
+      heading.className = 'section-title';
+      heading.textContent = '属性';
+      const list = document.createElement('ul');
+      list.className = 'attribute-list';
+      const details = [
+        `公式に確認した文字体系: ${font.officialScripts.join(' / ')}`,
+        `文字幅: ${font.attributes.width}`,
+        `書体分類: ${font.attributes.classification}`,
+        `利用環境: ${font.attributes.environment}`,
+        `収録文字データ: ${coverageStatusLabel(coverageMetadata(font))}`
+      ];
+      for (const detail of details) {
+        const item = document.createElement('li');
+        item.textContent = detail;
+        list.appendChild(item);
+      }
+      section.append(heading, list);
+      sampleArea.appendChild(section);
+    }
   }
 
-  if (state.mode === 'width') {
-    const rows = ['iiiiiiiiii', 'WWWWWWWWWW', '1234567890'];
-    return `${memoSample}
-      <div class="sample-text">
-        ${rows.map((row) => `<div class="width-line">${Array.from(row).map((char) => `<span class="width-char">${char}</span>`).join('')}</div>`).join('')}
-      </div>
-    `;
-  }
-
-  if (state.mode === 'detail') {
-    return `${memoSample}
-      ${samples.normal.map((section) => `
-        <section class="sample-section">
-          <h4 class="section-title">${section.title}</h4>
-          <div class="sample-text"${section.lang ? ` lang="${section.lang}"` : ''}>${section.text}</div>
-        </section>
-      `).join('')}
-      <section class="sample-section">
-        <h4 class="section-title">属性</h4>
-        <ul class="attribute-list">
-          <li>対応文字: ${font.attributes.supports.join(' / ')}</li>
-          <li>文字幅: ${font.attributes.width}</li>
-          <li>書体分類: ${font.attributes.classification}</li>
-          <li>利用環境: ${font.attributes.environment}</li>
-          <li>フォント機能: ${font.attributes.features.length > 0 ? font.attributes.features.join(' / ') : '未調査'}</li>
-        </ul>
-      </section>
-    `;
-  }
-
-  return `${memoSample}
-    ${samples.normal.map((section) => `
-      <section class="sample-section">
-        <h4 class="section-title">${section.title}</h4>
-        <div class="sample-text"${section.lang ? ` lang="${section.lang}"` : ''}>${section.text}</div>
-      </section>
-    `).join('')}
-  `;
+  const legend = createCoverageLegend(font, unsupportedCount);
+  if (legend) sampleArea.prepend(legend);
 }
 
 function updateControlLabels() {

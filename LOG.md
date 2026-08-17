@@ -1,3 +1,89 @@
+## 2026-08-18 cmap収録文字調査と未収録文字表示
+
+### 目的
+
+ブラウザやOSのフォールバックにより対象フォントで表示できているように見える問題を改善し、解析済みcmapにない文字だけを文章中で薄く表示する。未解析データは未収録と決めつけず、`supported` / `unsupported` / `unknown` の3状態で扱う。
+
+### 公式情報調査
+
+- Segoe UI: Microsoft Learnでラテン、ギリシャ、キリル、アルメニア、グルジア、アラビア、ヘブライ、リス等を確認。製品・サービスへの排他的収録と再配布案内を確認。`https://learn.microsoft.com/en-us/typography/font-list/segoe-ui`
+- Yu Gothic UI: Microsoft Learnで日本語（漢字・ひらがな・カタカナ）、ラテン、ギリシャ、キリルを確認。Yu Gothic UI各ウェイトがTTCに含まれることを確認。`https://learn.microsoft.com/en-us/typography/font-list/yu-gothic`
+- Meiryo: Microsoft Learnで日本語、ラテン、ギリシャ、キリルを確認。Microsoft製品への収録と再配布案内を確認。`https://learn.microsoft.com/en-us/typography/font-list/meiryo`
+- MS Mincho: Microsoft Learnで日本語、ラテン、ギリシャ、キリルを確認。MS MinchoとMS PMinchoが同じTTCの別フェイスであることを確認。`https://learn.microsoft.com/en-us/typography/font-list/ms-mincho`
+- Consolas: Microsoft Learnでラテン、ギリシャ、キリル、アルメニアと等幅であることを確認。`https://learn.microsoft.com/en-us/typography/font-list/consolas`
+- Cascadia Code: Microsoft公式GitHubでWindows Terminal同梱のコーディングフォント、配布形式、公式リリースを確認。公式ページから文字体系一覧を確定できなかったため未確認を維持。LICENSEでSIL Open Font License 1.1を確認。`https://github.com/microsoft/cascadia-code` / `https://github.com/microsoft/cascadia-code/blob/main/LICENSE`
+- Courier New: Microsoft Learnでラテン、ギリシャ、キリル、アルメニアを主対象、アラビア・ヘブライを補助対象として確認。等幅と製品付属・再配布案内を確認。`https://learn.microsoft.com/en-us/typography/font-list/courier-new`
+- Times New Roman: Microsoft Learnでラテン、ギリシャ、キリル、アルメニアを主対象、アラビア・ヘブライを補助対象として確認。製品付属・再配布案内を確認。`https://learn.microsoft.com/en-us/typography/font-list/times-new-roman`
+
+Microsoft製品付属7フォントは「Microsoft製品付属（再配布は別途ライセンス確認）」とし、利用とファイル再配布を混同しない表現にした。「フリー」「商用利用自由」とは表示していない。
+
+### cmap解析結果
+
+解析日時は `2026-08-18T04:37:02+09:00`。Python 3.14.6、fontTools 4.63.0の `getBestCmap()` を使用した。
+
+| フォント | 解析 | ファイル / 内部フェイス | バージョン | コードポイント / 圧縮範囲 |
+|---|---|---|---|---:|
+| Segoe UI | 済 | `segoeui.ttf` / Segoe UI | Version 5.71 | 3,996 / 159 |
+| Yu Gothic UI | 済 | `YuGothM.ttc` / Yu Gothic UI Regular（face 1） | Version 1.95 | 16,538 / 4,892 |
+| Meiryo | 済 | `meiryo.ttc` / Meiryo（face 0） | Version 6.51 | 17,189 / 4,754 |
+| MS Mincho | 済 | `msmincho.ttc` / MS Mincho（face 0） | Version 5.32 | 16,134 / 4,660 |
+| Consolas | 済 | `consola.ttf` / Consolas | Version 7.01 | 2,489 / 116 |
+| Cascadia Code | 未実施 | ファイルなし | 未確認 | 未確認 |
+| Courier New | 済 | `cour.ttf` / Courier New | Version 6.95 | 3,180 / 163 |
+| Times New Roman | 済 | `times.ttf` / Times New Roman | Version 7.12 | 3,678 / 122 |
+
+`YuGothR.ttc` のUIフェイスはこの環境ではYu Gothic UI Semilightだった。通常ウェイトに対応するYu Gothic UI Regularを内部名で確認し、`YuGothM.ttc` のface 1を解析した。Cascadia CodeはWindowsフォント登録情報と既知のフォントファイル名で見つからなかった。要件どおり自動ダウンロードせず、`not-analyzed` / `unknown` とした。
+
+### 実装内容
+
+- `analyze_font_cmap.py`をTTF、OTF、TTC対応CLIへ再構成した。`--font`と`--face`を複数指定でき、TTC内部名で対象フェイスを選ぶ。
+- `font-coverage-data.js`へ解析日時、ファイル名、内部フェイス名・番号、バージョン、コードポイント数、連続範囲を出力した。フォントファイル自体は追加していない。
+- `font-coverage.js`へ圧縮範囲の二分探索と3状態判定を分離した。
+- 文字列を `for...of` でUnicodeコードポイント単位に走査し、未収録文字だけ `unsupported-glyph` と `data-codepoint`、`title` を持つspanにした。その他はまとめてテキストノードにした。
+- 通常、詳細、固定マス、実幅枠、全見本種別、Memo Nexus比較文章へ同じ処理を適用した。
+- 未収録がある解析済みカードだけフォールバック説明の凡例を表示し、未解析カードには未確認の凡例を表示した。
+- カードへ公式文字体系、cmap状態、バージョン、解析元ファイル、内部フェイス、確認日、ライセンス、公式URLを追加した。
+- KaTeX専用ビューへ通常フォント用の判定処理は混在させていない。
+
+### セキュリティ
+
+- Memo Nexusの比較文章を `innerHTML` へ渡さず、`textContent` / `createTextNode` と未収録文字用spanだけで構築する。
+- サロゲートペアを分割せず、文字順、空白、改行、結合文字、異体字セレクタを削除しない。
+- 空白、改行、タブ、Unicode制御・書式文字は未収録クラスを付けない。
+- 既存の戻りURL許可リスト、最大700文字、フォントID検証を維持した。
+
+### 自動テスト
+
+- `node --check app.js`: 成功
+- `node --check font-coverage.js`: 成功
+- `node --test *.test.js`: 20件成功、失敗0件
+- `python -m py_compile analyze_font_cmap.py`: 成功
+- Python補助テスト（連続範囲圧縮、`FONT_ID=VALUE`引数解析）: 成功
+
+3状態、範囲端、サロゲートペア、空白・改行・タブ、収録済み文字、未収録クラス、文字順、`<script>`風文字列、未解析表示、全4モード、初期3カード、Memo Nexus連携を確認した。
+
+### 実ブラウザ確認
+
+- 初期3カード、全8カード、通常・固定マス・実幅枠・詳細を確認した。固定マスは各8セル、実幅枠は各30枠、詳細は各8セクションで0幅要素はなかった。
+- Segoe UI、Consolas、Courier New、Times New Romanは日本語見本29文字が未収録表示になった。
+- Yu Gothic UI、Meiryo、MS Minchoは日本語見本の未収録表示が0文字だった。
+- 3日本語フォントは簡体字の `张`（U+5F20）、`过`（U+8FC7）、`懒`（U+61D2）のみ見本内で未収録表示となり、文字単位の濃淡を確認した。
+- Cascadia Codeは未収録文字0、未確認凡例を表示し、通常濃度を維持した。
+- 未収録文字の不透明度0.3、`data-codepoint`、`未収録（U+XXXX）`タイトルを確認した。
+- サイズ28px、太さ700、行間1.8、字間2pxの変更がカードへ反映された。
+- Memo Nexusの `<script>window.memoXss=1</script>` 風文章はパネルとカードで文字として保持され、script要素は生成されなかった。全8カード、選択状態、安全な戻り先の有効化も確認した。
+- KaTeX 51用例、12フォント役割カード、レンダリング51件、エラー表示0件、通常ビューへの復帰を確認した。
+- 390pxでは1列、800pxでは2列、横スクロールなし。OSダークモードで凡例色と薄い文字を目視確認した。
+- ブラウザのconsole error / warning、エラーオーバーレイはいずれも0件だった。
+
+### 未確認・既知の制約
+
+- Cascadia Codeの実ファイル、バージョン、cmapはこの環境にないため未確認。
+- Cascadia Codeの公式リポジトリから文字体系一覧を確定できなかったため未確認。
+- 閲覧環境の同名フォントが解析版と同一バージョンかはブラウザから確認しない。
+- cmapはコードポイントの有無であり、字形品質、言語全体、結合・異体字シーケンス、OpenType機能の完全対応を保証しない。
+- フォールバック先の具体的なフォント名は特定しない。
+
 ## 2026-07-15 KaTeX 数式フォント専用ビュー追加
 
 ### 変更内容
@@ -139,3 +225,13 @@
 - `<script>`風の比較文章は文字として表示され、連携パネルとカード内にscript要素を生成しなかった。確認中のコンソールerrorとエラーオーバーレイは0件だった
 - Meiryoを選び、localhostのMemo Nexusへ検証済みパラメータで戻る一連の操作を確認した
 - 接続ブラウザの表示領域とOSカラースキームを変更する機能を利用できなかったため、スマートフォン実幅とダークモードは自動テストとCSS契約で確認し、実ブラウザの目視確認はDraft PRの確認事項として残す
+## 2026-08-18 PR #5 cmap収録判定のレビュー修正
+
+### 変更内容
+
+- `font-coverage.js`をUnicodeコードポイント単位ではなく書記素クラスタ単位で描画するようにし、結合文字、異体字セレクタ、ZWJ絵文字を`span.unsupported-glyph`の境界で分断しないようにした。
+- `Intl.Segmenter`非対応時も、結合記号、異体字セレクタ、絵文字修飾子、地域指標、ZWJ/ZWNJをまとめる保守的なフォールバックを追加した。判定できない書式制御文字だけでは未収録表示にしない。
+- 未収録クラスタの`title`と`data-codepoint` / `data-codepoints`に、原因となったコードポイントを保持するようにした。
+- 凡例を「別のフォントで代替表示されています」から「ブラウザが別のフォントによる代替表示を試みます」へ変更し、代替表示の成功を断定しない表現にした。
+- Microsoft LearnのMS Mincho公式情報（`Fixed pitch: True`）に合わせ、このアプリで登録・解析するMS Minchoの文字幅を「等幅」へ修正した。MS PMinchoは別フェイスのプロポーショナル書体として区別する。
+- `font-coverage-data.js`は再生成していない。

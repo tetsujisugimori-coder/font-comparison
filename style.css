@@ -417,6 +417,27 @@ select {
   white-space: pre-wrap;
 }
 
+.unsupported-glyph {
+  opacity: 0.3;
+}
+
+.coverage-legend {
+  margin: 0;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: var(--control-bg);
+  color: var(--muted);
+  font-family: "Segoe UI", "Yu Gothic UI", sans-serif;
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.5;
+  letter-spacing: normal;
+}
+
+.coverage-unknown {
+  border: 1px solid var(--border);
+}
+
 .sample-code {
   white-space: pre-wrap;
 }
@@ -997,6 +1018,11 @@ select {
     background: var(--control-bg);
     color: var(--text);
     border-color: var(--border);
+  }
+
+  .coverage-legend {
+    background: var(--control-bg);
+    color: #c1cad6;
   }
 
   .katex-notes,
