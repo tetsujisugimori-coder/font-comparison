@@ -63,7 +63,13 @@ test('通常モードの初期3カードと4表示モードを維持する', () 
 test('凡例は未収録がある解析済みカードだけに出し、未解析は未確認とする', () => {
   assert.match(app, /if \(coverage\.status !== 'analyzed'\)[\s\S]*収録文字情報は未確認/);
   assert.match(app, /if \(unsupportedCount === 0\) return null/);
-  assert.match(app, /薄い文字は、このフォントに未収録です。別のフォントで代替表示されています。/);
+  assert.match(app, /薄い文字は、解析した対象フォントに未収録です。ブラウザが別のフォントによる代替表示を試みます。/);
+  assert.doesNotMatch(app, /別のフォントで代替表示されています。/);
+});
+
+test('MS Minchoは通常カードと詳細表示で共通の等幅属性を使う', () => {
+  assert.match(app, /id: 'ms-mincho',[\s\S]*?width: '等幅'/);
+  assert.match(app, /font\.attributes\.width/);
 });
 
 test('KaTeXの51用例と表示切替処理を維持する', () => {

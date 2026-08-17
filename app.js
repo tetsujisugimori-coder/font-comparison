@@ -56,7 +56,7 @@ const fonts = [
     uses: ['日本語本文', '印刷', '長文'],
     attributes: {
       supports: ['基本ラテン対応', '日本語対応', 'Windows標準'],
-      width: 'プロポーショナル',
+      width: '等幅',
       classification: '明朝体 / セリフ',
       environment: 'Windows標準',
       features: []
@@ -341,7 +341,7 @@ function createCoverageLegend(font, unsupportedCount) {
   if (unsupportedCount === 0) return null;
   const legend = document.createElement('p');
   legend.className = 'coverage-legend';
-  legend.textContent = '薄い文字は、このフォントに未収録です。別のフォントで代替表示されています。';
+  legend.textContent = '薄い文字は、解析した対象フォントに未収録です。ブラウザが別のフォントによる代替表示を試みます。';
   return legend;
 }
 

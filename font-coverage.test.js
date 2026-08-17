@@ -8,7 +8,9 @@ const {
   appendCoverageText,
   characterStatus,
   codepointStatus,
+  fallbackToCodepointAwareClusters,
   formatCodepoint,
+  getGraphemeClusters,
   shouldKeepNormalOpacity
 } = require('./font-coverage');
 
@@ -87,6 +89,56 @@ test('サロゲートペアを途中で分割せず未収録文字だけにク�
   assert.equal(container.textContent, 'A🙂B');
 });
 
+test('結合文字を途中で分断せず、未収録の結合記号を含むクラスタ全体を薄くする', () => {
+  const data = { fonts: { analyzed: { status: 'analyzed', ranges: [[0x65, 0x65]] } } };
+  const documentRef = new FakeDocument();
+  const container = new FakeNode('DIV', documentRef);
+  const unsupportedCount = appendCoverageText(container, 'e\u0301', 'analyzed', data);
+  const unsupported = container.children.filter((node) => node.className === 'unsupported-glyph');
+  assert.equal(unsupportedCount, 1);
+  assert.equal(unsupported.length, 1);
+  assert.equal(unsupported[0].textContent, 'e\u0301');
+  assert.equal(unsupported[0].dataset.codepoint, 'U+0301');
+  assert.equal(container.textContent, 'e\u0301');
+});
+
+test('異体字セレクタだけが通常cmapにない場合は未収録と断定しない', () => {
+  const data = { fonts: { analyzed: { status: 'analyzed', ranges: [[0x2600, 0x2600]] } } };
+  const documentRef = new FakeDocument();
+  const container = new FakeNode('DIV', documentRef);
+  const unsupportedCount = appendCoverageText(container, '☀️', 'analyzed', data);
+  assert.equal(unsupportedCount, 0);
+  assert.equal(container.children.some((node) => node.className === 'unsupported-glyph'), false);
+  assert.equal(container.textContent, '☀️');
+});
+
+test('ZWJ絵文字を分断せず、未収録なら1個のクラスタ要素へまとめる', () => {
+  const family = '👨‍👩‍👧‍👦';
+  const { container, unsupportedCount } = render(family);
+  const unsupported = container.children.filter((node) => node.className === 'unsupported-glyph');
+  assert.equal(unsupportedCount, 1);
+  assert.equal(unsupported.length, 1);
+  assert.equal(unsupported[0].textContent, family);
+  assert.equal(unsupported[0].dataset.codepoints, 'U+1F468 U+1F469 U+1F467 U+1F466');
+  assert.equal(container.textContent, family);
+});
+
+test('収録済みの書記素クラスタは通常のテキストノードとして維持する', () => {
+  const data = { fonts: { analyzed: { status: 'analyzed', ranges: [[0x65, 0x65], [0x301, 0x301]] } } };
+  const documentRef = new FakeDocument();
+  const container = new FakeNode('DIV', documentRef);
+  const unsupportedCount = appendCoverageText(container, 'e\u0301', 'analyzed', data);
+  assert.equal(unsupportedCount, 0);
+  assert.equal(container.children.length, 1);
+  assert.equal(container.children[0].tagName, null);
+  assert.equal(container.textContent, 'e\u0301');
+});
+
+test('Intl.Segmenter非対応時も結合文字・異体字セレクタ・ZWJを保守的にまとめる', () => {
+  assert.deepEqual(fallbackToCodepointAwareClusters('e\u0301☀️👨‍👩‍👧‍👦'), ['e\u0301', '☀️', '👨‍👩‍👧‍👦']);
+  assert.deepEqual(getGraphemeClusters('e\u0301☀️👨‍👩‍👧‍👦'), ['e\u0301', '☀️', '👨‍👩‍👧‍👦']);
+});
+
 test('空白・改行・タブなどの制御用文字は薄くしない', () => {
   assert.equal(shouldKeepNormalOpacity(' '), true);
   assert.equal(shouldKeepNormalOpacity('\n'), true);
@@ -94,6 +146,12 @@ test('空白・改行・タブなどの制御用文字は薄くしない', () =>
   const { container, unsupportedCount } = render('B \n\tB');
   assert.equal(unsupportedCount, 2);
   assert.equal(container.textContent, 'B \n\tB');
+});
+
+test('書式制御文字は単独で薄くしない', () => {
+  const { container, unsupportedCount } = render('\u200D\u200C');
+  assert.equal(unsupportedCount, 0);
+  assert.equal(container.textContent, '\u200D\u200C');
 });
 
 test('未解析フォントは文字を薄くせず文章をそのまま保つ', () => {
