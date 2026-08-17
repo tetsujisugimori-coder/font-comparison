@@ -1,39 +1,102 @@
 const openTypeFeatureDefinitions = {
   liga: {
     name: '標準合字',
-    description: 'fiやflなどを1文字として表示する合字を有効化する'
+    description: 'fiやflなどの文字列を単独の合字字形で表示します。'
   },
   kern: {
     name: 'カーニング',
-    description: '文字組みで文字間隔を微調整し読みやすさを向上する'
+    description: '文字ペア間の組版時の字間を調整します。'
   },
   palt: {
     name: 'プロポーショナル字形',
-    description: '約物や文字の字幅を文脈に応じて調整する'
+    description: '約物や文字の幅を文脈に応じて調整します。'
   },
   vert: {
     name: '縦書き字形',
-    description: '縦書き時に適した字形へ置換する'
+    description: '縦書き向けの字形へ置換します。'
+  },
+  vpal: {
+    name: '縦書き文字組版調整',
+    description: '縦組時の約物・文字幅を調整します。'
   },
   tnum: {
     name: '等幅数字',
-    description: '数字を同じ幅で表示する'
+    description: '数字の幅を同一に揃えて表示します。'
   },
   smcp: {
     name: 'スモールキャップ',
-    description: '小文字を小型の大文字風字形へ置き換える'
+    description: '小文字を代替の小型大文字風字形へ置換します。'
   },
   ss01: {
     name: 'スタイルセット1',
-    description: 'デザイン替えのオプション字形へ切り替える'
+    description: '代替デザインの字形へ切り替えます。'
+  },
+  locl: {
+    name: 'ローカライズ',
+    description: '言語別の字形を使うための切り替えです。'
+  },
+  ruby: {
+    name: 'ルビ文字',
+    description: 'ルビ文字の代替字形を提供するために使用される機能です。'
+  },
+  fwid: {
+    name: '全角幅',
+    description: '文字を全角幅へ合わせるための字幅調整です。'
+  },
+  hwid: {
+    name: '半角幅',
+    description: '文字を半角幅へ合わせるための字幅調整です。'
+  },
+  halt: {
+    name: '横書き文字寄りハンドル',
+    description: '横組みの位置調整・配置に関わる代替指定です。'
+  },
+  vhal: {
+    name: '縦書き文字寄りハンドル',
+    description: '縦組みの位置調整・配置に関わる代替指定です。'
+  },
+  vrt2: {
+    name: '代替縦書き字形2',
+    description: '縦書き時の字形代替ルールを追加します。'
+  },
+  vkna: {
+    name: '縦書き和文カナ',
+    description: '縦方向表示時のカナ字形差し替えを行います。'
+  },
+  jp78: {
+    name: 'JIS78字形',
+    description: 'JIS78準拠字形差し替えを行います。'
+  },
+  jp83: {
+    name: 'JIS83字形',
+    description: 'JIS83準拠字形差し替えを行います。'
+  },
+  jp90: {
+    name: 'JIS90字形',
+    description: 'JIS90準拠字形差し替えを行います。'
+  },
+  jp04: {
+    name: 'JIS2004字形',
+    description: 'JIS2004準拠字形差し替えを行います。'
+  },
+  mark: {
+    name: 'マーク配置',
+    description: 'アクセントや合成文字での付属記号の位置を調整します。'
+  },
+  mkmk: {
+    name: '結合記号整形',
+    description: '複数の記号を組み合わせる際の位置調整を行います。'
+  },
+  ccmp: {
+    name: '合字作成補助',
+    description: '文字の正規化や組み合わせを行い、表示を整えます。'
   }
 };
 
-const openTypeFeatureOrder = ['liga', 'kern', 'palt', 'vert', 'tnum', 'smcp', 'ss01'];
-const openTypeStatusLabels = { confirmed: '収録確認済み', unsupported: '未収録', unknown: '未確認' };
+const openTypeUnknownDescription = '説明未確認';
 
-function makeOpenTypeProfile(isVerified, supportedTags = []) {
-  return { verified: isVerified, supportedTags };
+function makeOpenTypeProfile(isVerified, supportedFeatures = []) {
+  return { verified: isVerified, supportedFeatures };
 }
 
 function makeFontEntry(base) {
@@ -61,7 +124,7 @@ const fonts = [
       classification: 'ゴシック体 / サンセリフ',
       environment: 'Windows標準',
       features: [],
-      openType: makeOpenTypeProfile(true, ['liga', 'kern', 'smcp', 'ss01', 'tnum'])
+      openType: makeOpenTypeProfile(false, [])
     },
     sourceType: 'system',
     fontOrigin: 'システム',
@@ -80,7 +143,7 @@ const fonts = [
       classification: 'ゴシック体 / サンセリフ',
       environment: 'Windows標準',
       features: [],
-      openType: makeOpenTypeProfile(true, ['liga', 'kern'])
+      openType: makeOpenTypeProfile(false, [])
     },
     sourceType: 'system',
     fontOrigin: 'システム',
@@ -99,7 +162,7 @@ const fonts = [
       classification: 'ゴシック体 / サンセリフ',
       environment: 'Windows標準',
       features: [],
-      openType: makeOpenTypeProfile(true, ['liga', 'kern', 'vert', 'smcp'])
+      openType: makeOpenTypeProfile(false, [])
     },
     sourceType: 'system',
     fontOrigin: 'システム',
@@ -118,7 +181,7 @@ const fonts = [
       classification: '明朝体 / セリフ',
       environment: 'Windows標準',
       features: [],
-      openType: makeOpenTypeProfile(true, ['vert'])
+      openType: makeOpenTypeProfile(false, [])
     },
     sourceType: 'system',
     fontOrigin: 'システム',
@@ -137,7 +200,7 @@ const fonts = [
       classification: 'サンセリフ寄り',
       environment: 'Windows標準',
       features: [],
-      openType: makeOpenTypeProfile(true, ['liga'])
+      openType: makeOpenTypeProfile(false, [])
     },
     sourceType: 'system',
     fontOrigin: 'システム',
@@ -194,7 +257,7 @@ const fonts = [
       classification: 'セリフ',
       environment: 'Windows標準',
       features: [],
-      openType: makeOpenTypeProfile(true, ['liga', 'kern'])
+      openType: makeOpenTypeProfile(false, [])
     },
     sourceType: 'system',
     fontOrigin: 'システム',
@@ -213,7 +276,7 @@ const fonts = [
       classification: 'セリフ',
       environment: 'Windows標準',
       features: [],
-      openType: makeOpenTypeProfile(true, ['liga', 'kern', 'tnum', 'smcp', 'ss01'])
+      openType: makeOpenTypeProfile(false, [])
     },
     sourceType: 'system',
     fontOrigin: 'システム',
@@ -326,7 +389,23 @@ const officialFontMetadata = {
   }
 };
 
+const openTypeData = window.FontOpenTypeData || { fonts: {} };
+
+function normalizeOpenTypeProfile(fontId) {
+  const entry = openTypeData.fonts?.[fontId];
+  if (!entry || entry.status !== 'analyzed') return makeOpenTypeProfile(false, []);
+  const features = Array.isArray(entry.features) ? entry.features : [];
+  return {
+    ...makeOpenTypeProfile(true, features),
+    analysisMethod: entry.analysisMethod || null
+  };
+}
+
 fonts.forEach((font) => Object.assign(font, memoFontMetadata[font.id], officialFontMetadata[font.id], {
+  attributes: {
+    ...font.attributes,
+    openType: normalizeOpenTypeProfile(font.id)
+  },
   metadataConfirmedAt: '2026-08-18'
 }));
 
@@ -394,24 +473,19 @@ function orderedFonts(items) {
   return [...items].sort((a, b) => Number(isRecommended(b)) - Number(isRecommended(a)));
 }
 
-function openTypeFeatureStatus(font, tag) {
-  const profile = font.attributes?.openType;
-  if (!profile?.verified) return 'unknown';
-  return profile.supportedTags.includes(tag) ? 'confirmed' : 'unsupported';
-}
-
 function openTypeFeatureRows(font) {
   if (!font.attributes?.openType?.verified) return [];
-  return openTypeFeatureOrder.map((tag) => {
+  const features = Array.isArray(font.attributes.openType.supportedFeatures) ? font.attributes.openType.supportedFeatures : [];
+  return [...features].sort((a, b) => a.tag.localeCompare(b.tag)).map((feature) => {
+    const tag = feature.tag || '';
+    if (!tag) return null;
     const definition = openTypeFeatureDefinitions[tag];
-    if (!definition) return null;
-    const status = openTypeFeatureStatus(font, tag);
+    const tables = Array.isArray(feature.tables) ? feature.tables : [];
     return {
       tag,
-      name: definition.name,
-      description: definition.description,
-      status,
-      statusLabel: openTypeStatusLabels[status]
+      name: definition?.name || '説明未確認',
+      description: definition?.description || openTypeUnknownDescription,
+      tables
     };
   }).filter(Boolean);
 }
@@ -419,9 +493,7 @@ function openTypeFeatureRows(font) {
 function openTypeFeatureSummary(font) {
   const profile = font.attributes?.openType;
   if (!profile?.verified) return '未確認';
-  const rows = openTypeFeatureRows(font);
-  const confirmedCount = rows.filter((row) => row.status === 'confirmed').length;
-  return `収録確認済み: ${confirmedCount} / ${rows.length}件`;
+  return `収録確認済み: ${openTypeFeatureRows(font).length}件`;
 }
 
 function openTypeFeaturePanelContent(font) {
@@ -429,14 +501,16 @@ function openTypeFeaturePanelContent(font) {
     return '<p class="open-type-empty">OpenType機能は未確認です。収録状況を確認できていません。</p>';
   }
   const rows = openTypeFeatureRows(font);
-  if (!rows.length) return '<p class="open-type-empty">OpenType機能情報が未登録です。</p>';
+  if (!rows.length) {
+    return '<p class="open-type-empty">収録されているOpenType機能は確認されませんでした。</p>';
+  }
   return `
     <ul class="open-type-feature-list">
       ${rows.map((row) => `
-        <li class="open-type-feature-item status-${row.status}">
+        <li class="open-type-feature-item">
           <span class="feature-tag">${row.tag}</span>
           <span class="feature-title">${row.name}</span>
-          <span class="feature-status">${row.statusLabel}</span>
+          <span class="feature-tables">${row.tables.join(' / ')}</span>
           <p class="feature-description">${row.description}</p>
         </li>
       `).join('')}
@@ -447,6 +521,7 @@ function openTypeFeaturePanelContent(font) {
 function updateOpenTypePanelState(button, panel, open) {
   button.setAttribute('aria-expanded', String(open));
   button.classList.toggle('is-open', open);
+  panel.hidden = !open;
   panel.classList.toggle('is-open', open);
   const label = button.querySelector('.open-type-toggle-label');
   const baseName = button.dataset.fontName || 'このフォント';
@@ -601,7 +676,7 @@ function renderCards() {
         <div class="footer-block opentype-feature-block">
           <h4>OpenType機能</h4>
           <button type="button" class="open-type-toggle" data-font-name="${escapeHtml(font.name)}" aria-expanded="false" aria-controls="open-type-${escapeHtml(font.id)}" aria-label="${escapeHtml(font.name)}のOpenType機能を開く">
-            <span class="open-type-toggle-label">詳細を表示</span>
+            <span class="open-type-toggle-label">詳細を開く</span>
             <span class="open-type-toggle-icon" aria-hidden="true">▸</span>
           </button>
           <div id="open-type-${escapeHtml(font.id)}" class="open-type-feature-panel" role="region" aria-label="${escapeHtml(font.name)}のOpenType機能">

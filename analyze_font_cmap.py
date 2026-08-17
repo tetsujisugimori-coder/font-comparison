@@ -1,4 +1,4 @@
-"""対象フォントの cmap を解析し、Web アプリ用の圧縮範囲データを生成する。"""
+"""対象フォントを解析し、cmap と OpenType機能情報を Web アプリ用データとして出力する。"""
 
 from __future__ import annotations
 
@@ -39,6 +39,11 @@ TARGETS: dict[str, FontTarget] = {
     "courier-new": FontTarget("Courier New", ("cour.ttf",), ("Courier New", "Courier New Regular")),
     "times-new-roman": FontTarget(
         "Times New Roman", ("times.ttf",), ("Times New Roman", "Times New Roman Regular")
+    ),
+    "noto-sans-jp-web": FontTarget(
+        "Noto Sans JP",
+        ("NotoSansJP-Regular.woff2", "NotoSansJP-Regular.otf", "NotoSansJP-Regular.ttf", "NotoSansJP-Regular.woff"),
+        ("Noto Sans JP",),
     ),
 }
 
@@ -83,7 +88,8 @@ def face_score(metadata: dict[str, object], expected_names: Iterable[str]) -> in
             return 300 + priority
         if candidate in family_names:
             return 200 + priority
-        if candidate.replace(" ", "-") in postscript_names or candidate.replace(" ", "") in postscript_names:
+        normalized = candidate.replace(" ", "-")
+        if normalized in postscript_names or candidate.replace(" ", "") in postscript_names:
             return 100 + priority
     return 0
 
@@ -112,6 +118,39 @@ def select_face(path: Path, target: FontTarget, requested_face: str | None) -> t
             f" 内部フェイス: {', '.join(available) or '名前なし'}"
         )
     return font, index, metadata, faces
+
+
+def parse_feature_tags(font: TTFont, table_tag: str) -> list[str]:
+    table = font.get(table_tag)
+    if table is None or not hasattr(table, "table"):
+        return []
+    feature_list = getattr(getattr(table, "table", None), "FeatureList", None)
+    if feature_list is None:
+        return []
+    tags = []
+    for record in getattr(feature_list, "FeatureRecord", []):
+        raw_tag = getattr(record, "FeatureTag", None)
+        if raw_tag is None:
+            continue
+        tag = raw_tag.decode("ascii", "ignore") if isinstance(raw_tag, (bytes, bytearray)) else str(raw_tag)
+        tag = tag.strip()
+        if len(tag) == 4 and tag not in tags:
+            tags.append(tag)
+    return tags
+
+
+def analyze_features(font: TTFont) -> list[dict[str, object]]:
+    gsub = parse_feature_tags(font, "GSUB")
+    gpos = parse_feature_tags(font, "GPOS")
+    result: list[dict[str, object]] = []
+    for tag in sorted(set(gsub) | set(gpos)):
+        tables = []
+        if tag in gsub:
+            tables.append("GSUB")
+        if tag in gpos:
+            tables.append("GPOS")
+        result.append({"tag": tag, "tables": tables})
+    return result
 
 
 def compress_codepoints(codepoints: Iterable[int]) -> list[list[int]]:
@@ -143,20 +182,26 @@ def parse_assignments(values: list[str], option: str) -> dict[str, str]:
 
 
 def default_font_path(target: FontTarget, font_dir: Path) -> Path | None:
-    entries = {entry.name.casefold(): entry for entry in font_dir.iterdir()} if font_dir.is_dir() else {}
+    if not font_dir.is_dir():
+        return None
+    entries = {entry.name.casefold(): entry for entry in font_dir.iterdir()}
     for candidate in target.candidates:
         if candidate.casefold() in entries:
             return entries[candidate.casefold()]
     return None
 
 
-def analyze_font(target: FontTarget, path: Path, requested_face: str | None) -> dict[str, object]:
+def now_iso() -> str:
+    return datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
+
+
+def analyze_font(target: FontTarget, path: Path, requested_face: str | None) -> tuple[dict[str, object], dict[str, object]]:
     font, face_index, metadata, all_faces = select_face(path, target, requested_face)
     try:
         cmap = font.getBestCmap()
         if cmap is None:
             raise ValueError("Unicode対応のcmapが見つかりません。")
-        return {
+        cover = {
             "fontName": target.label,
             "status": "analyzed",
             "fileName": path.name,
@@ -166,54 +211,91 @@ def analyze_font(target: FontTarget, path: Path, requested_face: str | None) -> 
             "codepointCount": len(cmap),
             "ranges": compress_codepoints(cmap.keys()),
         }
+        feature = {
+            "fontName": target.label,
+            "status": "analyzed",
+            "fileName": path.name,
+            "faceIndex": face_index,
+            "faceName": (metadata["fullNames"] or metadata["familyNames"] or ["未確認"])[0],
+            "fontVersion": metadata["version"],
+            "analysisDate": now_iso(),
+            "analysisMethod": "fontTools FeatureList解析（GSUB/GPOS）",
+            "features": analyze_features(font),
+        }
+        return cover, feature
     finally:
         for item in all_faces:
             item.close()
 
 
-def build_output(font_paths: dict[str, str], face_names: dict[str, str], font_dir: Path) -> dict[str, object]:
-    generated_at = datetime.now(timezone.utc).astimezone().isoformat(timespec="seconds")
-    fonts: dict[str, object] = {}
+def analyzed_entry_not_available(font_id: str, path: Path | None, reason: str) -> dict[str, object]:
+    return {
+        "fontName": TARGETS[font_id].label,
+        "status": "not-analyzed",
+        "fileName": path.name if path else None,
+        "faceIndex": None,
+        "faceName": None,
+        "fontVersion": None,
+        "analysisDate": now_iso(),
+        "analysisMethod": None,
+        "features": [],
+        "reason": reason,
+    }
+
+
+def build_output(font_paths: dict[str, str], face_names: dict[str, str], font_dir: Path) -> dict[str, dict[str, object]]:
+    coverage_fonts: dict[str, object] = {}
+    opentype_fonts: dict[str, object] = {}
+
     for font_id, target in TARGETS.items():
         configured_path = Path(font_paths[font_id]).expanduser() if font_id in font_paths else None
         path = configured_path or default_font_path(target, font_dir)
         if path is None or not path.is_file():
-            fonts[font_id] = {
-                "fontName": target.label,
+            not_analyzed = analyzed_entry_not_available(font_id, path, "フォントファイルが見つかりません。")
+            coverage_fonts[font_id] = {
+                "fontName": not_analyzed["fontName"],
                 "status": "not-analyzed",
-                "fileName": path.name if path else None,
+                "fileName": not_analyzed["fileName"],
                 "faceIndex": None,
                 "faceName": None,
                 "fontVersion": None,
                 "codepointCount": None,
                 "ranges": [],
-                "reason": "フォントファイルが見つかりません。",
+                "reason": not_analyzed["reason"],
             }
+            opentype_fonts[font_id] = not_analyzed
             continue
         try:
-            fonts[font_id] = analyze_font(target, path, face_names.get(font_id))
+            coverage_result, open_type_result = analyze_font(target, path, face_names.get(font_id))
+            coverage_fonts[font_id] = coverage_result
+            opentype_fonts[font_id] = open_type_result
         except (OSError, TTLibError, ValueError, KeyError) as error:
-            fonts[font_id] = {
-                "fontName": target.label,
+            not_analyzed = analyzed_entry_not_available(font_id, path, str(error))
+            coverage_fonts[font_id] = {
+                "fontName": not_analyzed["fontName"],
                 "status": "not-analyzed",
-                "fileName": path.name,
+                "fileName": not_analyzed["fileName"],
                 "faceIndex": None,
                 "faceName": None,
                 "fontVersion": None,
                 "codepointCount": None,
                 "ranges": [],
-                "reason": str(error),
+                "reason": not_analyzed["reason"],
             }
-    return {"schemaVersion": 1, "generatedAt": generated_at, "fonts": fonts}
+            opentype_fonts[font_id] = not_analyzed
 
-
-def write_javascript(output_path: Path, data: dict[str, object]) -> None:
-    serialized = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    output_path.write_text(
-        "/* analyze_font_cmap.py で生成。フォントファイル自体は含みません。 */\n"
-        f"window.FontCoverageData = {serialized};\n",
-        encoding="utf-8",
-    )
+    return {
+        "coverage": {
+            "schemaVersion": 1,
+            "generatedAt": now_iso(),
+            "fonts": coverage_fonts,
+        },
+        "openType": {
+            "schemaVersion": 1,
+            "generatedAt": now_iso(),
+            "fonts": opentype_fonts,
+        },
+    }
 
 
 def parse_args() -> argparse.Namespace:
@@ -239,7 +321,28 @@ def parse_args() -> argparse.Namespace:
         help="明示パスがない場合に既知のファイル名を探すフォントディレクトリ。",
     )
     parser.add_argument("--output", type=Path, default=Path("font-coverage-data.js"))
+    parser.add_argument("--open-type-output", type=Path, default=Path("font-opentype-data.js"))
     return parser.parse_args()
+
+
+def write_javascript(
+    coverage_path: Path,
+    opentype_path: Path,
+    coverage_data: dict[str, object],
+    open_type_data: dict[str, object],
+) -> None:
+    coverage_serialized = json.dumps(coverage_data, ensure_ascii=False, separators=(",", ":"))
+    coverage_path.write_text(
+        "/* analyze_font_cmap.py で生成。フォントファイル自体は含みません。 */\n"
+        f"window.FontCoverageData = {coverage_serialized};\n",
+        encoding="utf-8",
+    )
+    open_type_serialized = json.dumps(open_type_data, ensure_ascii=False, separators=(",", ":"))
+    opentype_path.write_text(
+        "/* analyze_font_cmap.py で生成。OpenType機能用データ。フォントファイル自体は含みません。 */\n"
+        f"window.FontOpenTypeData = {open_type_serialized};\n",
+        encoding="utf-8",
+    )
 
 
 def main() -> int:
@@ -247,21 +350,32 @@ def main() -> int:
     try:
         font_paths = parse_assignments(args.font, "--font")
         face_names = parse_assignments(args.face, "--face")
-        data = build_output(font_paths, face_names, args.font_dir)
-        write_javascript(args.output, data)
+        analyzed = build_output(font_paths, face_names, args.font_dir)
+        coverage_data = analyzed["coverage"]
+        open_type_data = analyzed["openType"]
+        write_javascript(args.output, args.open_type_output, coverage_data, open_type_data)
     except (OSError, ValueError) as error:
         print(f"エラー: {error}", file=sys.stderr)
         return 2
 
-    for font_id, result in data["fonts"].items():
+    for font_id, result in coverage_data["fonts"].items():
         if result["status"] == "analyzed":
             print(
                 f"{font_id}: {result['fileName']} / {result['faceName']} / "
                 f"{result['fontVersion']} / {result['codepointCount']} codepoints"
             )
         else:
-            print(f"{font_id}: 解析未実施 ({result['reason']})")
-    print(f"出力: {args.output}")
+            print(f"{font_id}: cmap解析未実施 ({result['reason']})")
+
+    for font_id, result in open_type_data["fonts"].items():
+        feature_count = len(result["features"])
+        if result["status"] == "analyzed":
+            print(f"{font_id}: OpenType機能 {feature_count}件 / {result['analysisMethod']}")
+        else:
+            print(f"{font_id}: OpenType機能 未解析 ({result['reason']})")
+
+    print(f"cmap出力: {args.output}")
+    print(f"OpenType出力: {args.open_type_output}")
     return 0
 
 
