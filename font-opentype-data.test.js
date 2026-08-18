@@ -8,6 +8,11 @@ const vm = require('node:vm');
 const context = { window: {} };
 vm.runInNewContext(fs.readFileSync('font-opentype-data.js', 'utf8'), context);
 const data = context.window.FontOpenTypeData;
+const loadDetail = (id) => {
+  const detailContext = { window: { FontAnalysisDetails: {} } };
+  vm.runInNewContext(fs.readFileSync(`analysis-details/${id}.js`, 'utf8'), detailContext);
+  return detailContext.window.FontAnalysisDetails[id];
+};
 const noto = data.fonts['noto-sans-jp-web'];
 const webFontIds = [
   'noto-sans-jp-web', 'noto-serif-jp-web', 'noto-sans-sc-web', 'noto-sans-tc-web',
@@ -26,24 +31,25 @@ test('10種類のWebフォントが解析済みOpenTypeデータを持つ', () =
   }
 });
 
-test('Noto Sans JPは指定Google Fonts CSSの全配信ファイル解析結果を持つ', () => {
+test('Noto Sans JPの統合OpenType一覧は起動時に保持し、配信証拠は詳細JSへ分離する', () => {
   assert.equal(noto.status, 'analyzed');
   assert.equal(noto.sourceType, 'web');
   assert.equal(noto.analysisTarget, 'Google Fonts CSSに定義されたWOFF2');
-  assert.equal(noto.cssUrl, 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
   assert.deepEqual([...noto.requestedWeights], [400, 700]);
-  assert.equal(noto.cssHost, 'fonts.googleapis.com');
-  assert.deepEqual([...noto.woff2Hosts], ['fonts.gstatic.com']);
-  assert.equal(noto.fontFaceCount, 248);
   assert.equal(noto.fileCount, 124);
-  assert.equal(noto.files.length, 124);
   assert.match(noto.fontVersion, /^Version 2\.004-H2/);
-  assert.equal(noto.files.filter((file) => file.weights.includes(400)).length, 124);
-  assert.equal(noto.files.filter((file) => file.weights.includes(700)).length, 124);
+  assert.equal('files' in noto, false);
+  const detail = loadDetail('noto-sans-jp-web');
+  assert.equal(detail.evidence.cssHost, 'fonts.googleapis.com');
+  assert.deepEqual([...detail.evidence.woff2Hosts], ['fonts.gstatic.com']);
+  assert.equal(detail.evidence.fontFaceCount, 248);
+  assert.equal(detail.evidence.files.length, 124);
+  assert.equal(detail.evidence.files.filter((file) => file.weights.includes(400)).length, 124);
+  assert.equal(detail.evidence.files.filter((file) => file.weights.includes(700)).length, 124);
 });
 
-test('各WOFF2はunicode-range、SHA-256、ウェイト、解析結果を保持する', () => {
-  for (const file of noto.files) {
+test('各WOFF2のunicode-range、SHA-256、ウェイト、解析結果を詳細JSで保持する', () => {
+  for (const file of loadDetail('noto-sans-jp-web').evidence.files) {
     assert.match(file.url, /^https:\/\/fonts\.gstatic\.com\/.+\.woff2$/);
     assert.ok(file.unicodeRanges.length > 0);
     assert.match(file.sha256, /^[0-9a-f]{64}$/);
@@ -63,7 +69,18 @@ test('統合タグは重複せず、GSUBとGPOSの両方を保持できる', () 
 test('Source Han Sans CNは固定リリースURLと解析済みファイル情報を持つ', () => {
   const sourceHan = data.fonts['source-han-sans-web'];
   assert.equal(sourceHan.fileCount, 2);
-  assert.match(sourceHan.files[0].url, /source-han-sans@2\.005R/);
-  assert.ok(sourceHan.files.every((file) => /^[0-9a-f]{64}$/.test(file.sha256)));
   assert.ok(sourceHan.features.length > 0);
+  const detail = loadDetail('source-han-sans-web');
+  assert.match(detail.evidence.files[0].url, /source-han-sans@2\.005R/);
+  assert.ok(detail.evidence.files.every((file) => /^[0-9a-f]{64}$/.test(file.sha256)));
+});
+
+test('起動時OpenTypeデータには統合機能のみを持ち、詳細証拠を含まない', () => {
+  assert.equal(data.schemaVersion, 2);
+  for (const font of Object.values(data.fonts)) {
+    assert.ok(Array.isArray(font.features));
+    assert.equal('files' in font, false);
+    assert.equal('userAgent' in font, false);
+    assert.equal('cssUrl' in font, false);
+  }
 });

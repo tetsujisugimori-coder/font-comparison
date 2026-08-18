@@ -114,8 +114,8 @@ class OutputUpdateTests(unittest.TestCase):
     def assert_originals_and_no_artifacts(self) -> None:
         self.assertEqual(self.opentype.read_text(encoding="utf-8"), self.original_opentype)
         self.assertEqual(self.coverage.read_text(encoding="utf-8"), self.original_coverage)
-        self.assertEqual(list(Path(self.temporary.name).glob("*.tmp")), [])
-        self.assertEqual(list(Path(self.temporary.name).glob("*.bak")), [])
+        self.assertEqual(list(Path(self.temporary.name).rglob("*.tmp")), [])
+        self.assertEqual(list(Path(self.temporary.name).rglob("*.bak")), [])
 
     def test_normal_update_changes_both_outputs_with_matching_generated_at(self) -> None:
         subject.update_outputs(self.opentype, self.coverage, self.result)
@@ -139,6 +139,15 @@ class OutputUpdateTests(unittest.TestCase):
         self.assertIn("noto-serif-jp-web", opentype["fonts"])
         self.assertIn("noto-serif-jp-web", coverage["fonts"])
 
+    def test_partial_web_update_does_not_remove_other_detail_file(self) -> None:
+        details = Path(self.temporary.name) / "analysis-details"
+        details.mkdir()
+        untouched = details / "inter-web.js"
+        untouched.write_text("existing detail", encoding="utf-8")
+        subject.update_outputs(self.opentype, self.coverage, self.result)
+        self.assertEqual(untouched.read_text(encoding="utf-8"), "existing detail")
+        self.assertTrue((details / "noto-sans-jp-web.js").exists())
+
     def test_first_temporary_creation_failure_keeps_both_outputs(self) -> None:
         with patch.object(subject, "create_temporary_file", side_effect=OSError("first temporary failure")):
             with self.assertRaises(OSError):
@@ -158,6 +167,22 @@ class OutputUpdateTests(unittest.TestCase):
 
         with patch.object(subject, "create_temporary_file", side_effect=fail_second):
             with self.assertRaises(OSError):
+                subject.update_outputs(self.opentype, self.coverage, self.result)
+        self.assert_originals_and_no_artifacts()
+
+    def test_detail_temporary_creation_failure_keeps_both_summaries(self) -> None:
+        original = subject.create_temporary_file
+        calls = 0
+
+        def fail_detail(target: Path, contents: str, suffix: str = ".tmp") -> Path:
+            nonlocal calls
+            calls += 1
+            if calls == 3:
+                raise OSError("detail temporary failure")
+            return original(target, contents, suffix)
+
+        with patch.object(subject, "create_temporary_file", side_effect=fail_detail):
+            with self.assertRaisesRegex(OSError, "detail temporary failure"):
                 subject.update_outputs(self.opentype, self.coverage, self.result)
         self.assert_originals_and_no_artifacts()
 

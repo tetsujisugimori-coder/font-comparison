@@ -162,8 +162,9 @@ function buildOpenTypeProfile(fontId) {
       cssHost: entry.cssHost || null,
       woff2Hosts: Array.isArray(entry.woff2Hosts) ? entry.woff2Hosts : [],
       requestedWeights: Array.isArray(entry.requestedWeights) ? entry.requestedWeights : [],
-      fontFaceCount: entry.fontFaceCount ?? null,
       fileCount: entry.fileCount ?? null,
+      hasDetails: Boolean(entry.hasDetails),
+      detailSchemaVersion: entry.detailSchemaVersion ?? null,
       reason: null
     }
   });
@@ -720,6 +721,7 @@ const openTypeDialogDisclaimer = document.getElementById('openTypeFeatureDialogD
 const openTypeDialogOfficial = document.getElementById('openTypeFeatureDialogOfficial');
 let openTypeDialogController = null;
 let activeOpenTypeFont = null;
+let activeOpenTypeDetailRequest = 0;
 
 function openTypeButtonLabel(font) {
   return `${font.name}のOpenType機能を確認`;
@@ -753,6 +755,71 @@ function renderOpenTypeDialogDetail(feature) {
   `;
 }
 
+function detailFileEvidenceHtml(files) {
+  if (!Array.isArray(files) || !files.length) return '';
+  return `<li><details class="open-type-analysis-evidence"><summary>ファイル別解析証拠（${files.length}件）</summary><ul>${files.map((file) => {
+    const parts = [
+      file.fileName,
+      file.url,
+      Number.isFinite(file.fileSize) ? `${file.fileSize} bytes` : '',
+      file.sha256 ? `SHA-256: ${file.sha256}` : '',
+      Array.isArray(file.weights) && file.weights.length ? `Weight: ${file.weights.join(' / ')}` : '',
+      Array.isArray(file.styles) && file.styles.length ? `Style: ${file.styles.join(' / ')}` : '',
+      Array.isArray(file.unicodeRanges) && file.unicodeRanges.length ? `unicode-range: ${file.unicodeRanges.join(' | ')}` : ''
+    ].filter(Boolean);
+    return `<li>${parts.map((part) => escapeHtml(part)).join('<br>')}</li>`;
+  }).join('')}</ul></details></li>`;
+}
+
+function renderAnalysisDetail(fontId, detail, stateMessage = '') {
+  if (activeOpenTypeFont !== fontId || !openTypeDialog?.open) return;
+  const evidence = detail?.evidence || {};
+  const openType = detail?.openType || {};
+  const fontVersion = formatFontVersion(evidence);
+  openTypeDialogFiles.innerHTML = [
+    `<li><strong>解析対象:</strong> ${escapeHtml(openType.analysisTarget || evidence.analysisTarget || '未確認')}</li>`,
+    fontVersion ? `<li><strong>フォントバージョン:</strong> ${escapeHtml(fontVersion)}</li>` : '',
+    evidence.cssUrl ? `<li><strong>CSS API:</strong> ${escapeHtml(evidence.cssUrl)}</li>` : '',
+    evidence.cssFetchedAt ? `<li><strong>CSS取得日:</strong> ${escapeHtml(evidence.cssFetchedAt)}</li>` : '',
+    evidence.userAgent ? `<li><strong>User-Agent:</strong> ${escapeHtml(evidence.userAgent)}</li>` : '',
+    evidence.fontFaceCount != null ? `<li><strong>CSS内の@font-face:</strong> ${escapeHtml(evidence.fontFaceCount)}件</li>` : '',
+    evidence.fileCount != null ? `<li><strong>解析ファイル数:</strong> ${escapeHtml(evidence.fileCount)}件</li>` : '',
+    evidence.sourceNote ? `<li><strong>注記:</strong> ${escapeHtml(evidence.sourceNote)}</li>` : '',
+    detailFileEvidenceHtml(evidence.files),
+    stateMessage ? `<li class="open-type-analysis-status">${escapeHtml(stateMessage)}</li>` : ''
+  ].filter(Boolean).join('');
+}
+
+function renderAnalysisDetailLoading(fontId) {
+  if (activeOpenTypeFont !== fontId) return;
+  openTypeDialogFiles.insertAdjacentHTML('beforeend', '<li class="open-type-analysis-status">解析詳細を読み込んでいます。</li>');
+}
+
+function renderAnalysisDetailFailure(fontId, error) {
+  if (activeOpenTypeFont !== fontId || !openTypeDialog?.open) return;
+  openTypeDialogFiles.insertAdjacentHTML(
+    'beforeend',
+    `<li class="open-type-analysis-status">解析詳細を読み込めませんでした: ${escapeHtml(error.message || '不明なエラー')} <button type="button" data-retry-analysis-detail="${escapeHtml(fontId)}">再試行</button></li>`
+  );
+}
+
+function loadOpenTypeAnalysisDetail(font) {
+  const fontId = font?.id;
+  const profile = font?.attributes?.openType;
+  if (!fontId || !profile?.analysis?.hasDetails) return;
+  const requestId = ++activeOpenTypeDetailRequest;
+  renderAnalysisDetailLoading(fontId);
+  window.FontAnalysisDetailsLoader.load(fontId, profile.analysis.detailSchemaVersion)
+    .then((detail) => {
+      if (requestId !== activeOpenTypeDetailRequest) return;
+      renderAnalysisDetail(fontId, detail, '解析詳細を読み込みました。');
+    })
+    .catch((error) => {
+      if (requestId !== activeOpenTypeDetailRequest) return;
+      renderAnalysisDetailFailure(fontId, error);
+    });
+}
+
 function setOpenTypeSelection(tag) {
   if (!tag || !activeOpenTypeFont) return;
   const font = fonts.find((item) => item.id === activeOpenTypeFont);
@@ -769,12 +836,13 @@ function setOpenTypeSelection(tag) {
 function openTypeFeatureDialogForFont(font, triggerButton) {
   if (!openTypeDialog) return;
   activeOpenTypeFont = font?.id || null;
+  activeOpenTypeDetailRequest += 1;
 
   const profile = font?.attributes?.openType || {};
   const meta = profile?.analysis || {};
   const rows = openTypeFeatureRows(font);
   const source = font?.delivery || font?.sourceInfo || {};
-  const isGoogleFonts = meta.sourceType === 'web' || Boolean(meta.cssUrl);
+  const isGoogleFonts = meta.sourceType === 'web';
   const fontVersion = formatFontVersion(meta);
 
   openTypeDialogTitle.textContent = `${font?.name || ''}`;
@@ -782,23 +850,16 @@ function openTypeFeatureDialogForFont(font, triggerButton) {
     `<li><strong>利用環境:</strong> ${escapeHtml(source.environment || font?.attributes?.environment || '未確認')}</li>`,
     `<li><strong>提供元:</strong> ${escapeHtml(source.provider || '未確認')}</li>`,
     `<li><strong>読み込み方法:</strong> ${escapeHtml(source.loadingMethod || '未確認')}</li>`,
-    `<li><strong>CSS取得先:</strong> ${escapeHtml(meta.cssHost || source.cssHost || '-')}</li>`,
-    `<li><strong>フォントファイル配信先:</strong> ${escapeHtml(meta.woff2Hosts?.join(' / ') || source.fileHost || '-')}</li>`,
+    `<li><strong>CSS取得先:</strong> ${escapeHtml(source.cssHost || '-')}</li>`,
+    `<li><strong>フォントファイル配信先:</strong> ${escapeHtml(source.fileHost || '-')}</li>`,
     `<li><strong>指定ウェイト:</strong> ${escapeHtml((meta.requestedWeights?.length ? meta.requestedWeights : source.weights || ['-']).join(' / '))}</li>`
   ].join('');
-  openTypeDialogFiles.innerHTML = isGoogleFonts
-    ? [
-        `<li><strong>解析対象:</strong> ${escapeHtml(meta.analysisTarget || 'Google Fonts CSSに定義されたWOFF2')}</li>`,
-        fontVersion ? `<li><strong>フォントバージョン:</strong> ${escapeHtml(fontVersion)}</li>` : '',
-        `<li><strong>CSS API:</strong> ${escapeHtml(meta.cssUrl)}</li>`,
-        `<li><strong>CSS取得日:</strong> ${escapeHtml(meta.cssFetchedAt || meta.analysisDate || '未確認')}</li>`,
-        `<li><strong>User-Agent:</strong> ${escapeHtml(meta.userAgent || '未確認')}</li>`,
-        `<li><strong>CSS内の@font-face:</strong> ${escapeHtml(meta.fontFaceCount ?? '未確認')}件</li>`,
-        `<li><strong>解析ファイル数:</strong> ${escapeHtml(meta.fileCount ?? '未確認')}件</li>`
-      ].join('')
-    : [
-        `<li><strong>解析対象:</strong> ${escapeHtml(openTypeAnalysisTarget(meta) || '未確認')}</li>`
-      ].join('');
+  openTypeDialogFiles.innerHTML = [
+    `<li><strong>解析対象:</strong> ${escapeHtml(meta.analysisTarget || openTypeAnalysisTarget(meta) || '未確認')}</li>`,
+    fontVersion ? `<li><strong>フォントバージョン:</strong> ${escapeHtml(fontVersion)}</li>` : '',
+    `<li><strong>解析ファイル数:</strong> ${escapeHtml(meta.fileCount ?? '未確認')}件</li>`,
+    profile?.analysis?.hasDetails ? '<li class="open-type-analysis-status">解析証拠の詳細は、このダイアログを開いた後に読み込みます。</li>' : '<li class="open-type-analysis-status">解析詳細データはありません。</li>'
+  ].join('');
   openTypeDialogSummary.innerHTML = [
     `<li><strong>OpenType解析:</strong> ${profile.verified ? '解析済み' : '未解析'}</li>`,
     `<li><strong>解析日:</strong> ${escapeHtml(meta.analysisDate || '未確認')}</li>`,
@@ -831,6 +892,7 @@ function openTypeFeatureDialogForFont(font, triggerButton) {
     openTypeDialogFeatureDetail.innerHTML = `<p class="open-type-feature-empty">${openTypeNoFeatureMessage}</p>`;
     openTypeDialogFeatureDetail.setAttribute('aria-label', 'OpenType機能: 0件');
     openTypeDialogController.open(triggerButton);
+    loadOpenTypeAnalysisDetail(font);
     return;
   }
 
@@ -849,6 +911,7 @@ function openTypeFeatureDialogForFont(font, triggerButton) {
 
   const firstChip = openTypeDialogFeatureList.querySelector('.open-type-feature-chip');
   openTypeDialogController.open(triggerButton, firstChip);
+  loadOpenTypeAnalysisDetail(font);
 }
 
 function bindOpenTypeDialogEvents() {
@@ -862,6 +925,13 @@ function bindOpenTypeDialogEvents() {
   });
   openTypeDialog.addEventListener('close', () => {
     activeOpenTypeFont = null;
+    activeOpenTypeDetailRequest += 1;
+  });
+  openTypeDialogFiles?.addEventListener('click', (event) => {
+    const button = event.target.closest('[data-retry-analysis-detail]');
+    if (!button) return;
+    const font = fonts.find((item) => item.id === button.dataset.retryAnalysisDetail);
+    if (font) loadOpenTypeAnalysisDetail(font);
   });
 }
 
