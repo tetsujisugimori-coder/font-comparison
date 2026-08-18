@@ -11,6 +11,14 @@ const fontFaceDataSource = fs.readFileSync('font-face-data.js', 'utf8');
 const katexData = fs.readFileSync('katex-data.js', 'utf8');
 const katexPage = fs.readFileSync('katex-page.js', 'utf8');
 
+function appFunction(name, nextName) {
+  const start = app.indexOf(`function ${name}(`);
+  const end = app.indexOf(`\nfunction ${nextName}(`, start);
+  assert.notEqual(start, -1, `${name} must exist`);
+  assert.notEqual(end, -1, `${nextName} must follow ${name}`);
+  return new Function(`${app.slice(start, end)}\nreturn ${name};`)();
+}
+
 test('Memo Nexus連携パネルは通常起動時に非表示で必要な操作を持つ', () => {
   assert.match(html, /id="memoNexusPanel"[^>]*hidden/);
   assert.match(html, /id="returnToMemoButton"[^>]*>Memo Nexusで使用/);
@@ -151,7 +159,7 @@ test('Webフォントの読み込み中・失敗・再試行と、選択済み�
   assert.match(app, /読込失敗/);
   assert.match(app, /再試行/);
   assert.match(app, /requestSelectedWebFonts/);
-  assert.match(app, /if \(event\.target\.checked\) loadWebFont\(font\)/);
+  assert.match(app, /if \(event\.target\.checked\) explicitlyRequestWebFont\(font\)/);
   assert.match(app, /web-font-status/);
   assert.match(css, /\.web-font-notice/);
   assert.match(app, /webFontFacePromises\.delete\(key\)/);
@@ -205,8 +213,67 @@ test('Webフォントは解析済みの見本文字で読込を確認し、実�
 
 test('Memo Nexusの全カード表示はWebフォントの一括取得を誘発しない', () => {
   assert.match(app, /state\.selectedIds = fonts\.map/);
-  assert.match(app, /explicitlyRequestedWebFonts\.has\(font\.id\)/);
   assert.match(app, /if \(font\.webFont\) explicitlyRequestedWebFonts\.add\(font\.id\)/);
+  assert.match(app, /requestWebFontsForSelectedIds\(fonts, state\.selectedIds, explicitlyRequestedWebFonts, loadWebFont\)/);
+});
+
+test('Memo Nexusの明示選択は対象Webフォントだけを一度だけ読み込み、システムフォントは要求しない', () => {
+  const requestExplicitWebFont = appFunction('requestExplicitWebFont', 'explicitlyRequestWebFont');
+  const requested = new Set();
+  const calls = [];
+  const load = (font) => {
+    calls.push(font.id);
+    return Promise.resolve();
+  };
+  const idle = { status: 'idle' };
+  const loaded = { status: 'loaded' };
+  const notoSansJp = { id: 'noto-sans-jp-web', webFont: {} };
+  const sourceHan = { id: 'source-han-sans-web', webFont: {} };
+  const system = { id: 'segoe-ui' };
+
+  assert.deepEqual(requestExplicitWebFont(notoSansJp, requested, idle, load).isWebFont, true);
+  assert.deepEqual([...requested], ['noto-sans-jp-web']);
+  assert.deepEqual(calls, ['noto-sans-jp-web']);
+  assert.equal(requestExplicitWebFont(notoSansJp, requested, loaded, load).started, false);
+  assert.deepEqual(calls, ['noto-sans-jp-web']);
+  assert.equal(requestExplicitWebFont(system, requested, idle, load).isWebFont, false);
+  assert.deepEqual(calls, ['noto-sans-jp-web']);
+  requestExplicitWebFont(sourceHan, requested, idle, load);
+  assert.deepEqual([...requested], ['noto-sans-jp-web', 'source-han-sans-web']);
+  assert.deepEqual(calls, ['noto-sans-jp-web', 'source-han-sans-web']);
+});
+
+test('明示選択済みのWebフォントだけがWeight変更時の追加読込対象になる', () => {
+  const requestWebFontsForSelectedIds = appFunction('requestWebFontsForSelectedIds', 'requestSelectedWebFonts');
+  const fonts = [
+    { id: 'noto-sans-jp-web', webFont: {} },
+    { id: 'source-han-sans-web', webFont: {} },
+    { id: 'segoe-ui' }
+  ];
+  const calls = [];
+  requestWebFontsForSelectedIds(
+    fonts,
+    fonts.map((font) => font.id),
+    new Set(),
+    (font) => calls.push(font.id)
+  );
+  assert.deepEqual(calls, []);
+  requestWebFontsForSelectedIds(
+    fonts,
+    fonts.map((font) => font.id),
+    new Set(['noto-sans-jp-web']),
+    (font) => calls.push(font.id)
+  );
+  assert.deepEqual(calls, ['noto-sans-jp-web']);
+  assert.match(app, /function requestedWebFontWeights\(font\)[\s\S]*new Set\(\[400, state\.fontWeight\]\)/);
+  assert.match(app, /if \(!next\.loadedWeights\.has\(weight\)\)/);
+});
+
+test('Memo Nexusの選択操作は共通の明示読込処理を通し、読込状態をカードへ案内する', () => {
+  assert.match(app, /const request = explicitlyRequestWebFont\(font\);/);
+  assert.match(app, /Webフォントの読込状態はカードに表示します。/);
+  assert.match(app, /if \(event\.target\.checked\) explicitlyRequestWebFont\(font\);/);
+  assert.match(app, /requestWebFontsForSelectedIds\(fonts, state\.selectedIds, explicitlyRequestedWebFonts, loadWebFont\)/);
 });
 
 test('OpenType機能ダイアログにはボタン、一覧、説明欄の要素があり、同一ダイアログを再利用する', () => {

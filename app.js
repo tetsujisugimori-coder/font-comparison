@@ -1129,8 +1129,28 @@ function loadWebFont(font, { retry = false } = {}) {
   return next.promise;
 }
 
+function requestExplicitWebFont(font, requestedFonts, loadState, load) {
+  if (!font.webFont) return { isWebFont: false, started: false };
+  const alreadyRequested = requestedFonts.has(font.id);
+  requestedFonts.add(font.id);
+  if (alreadyRequested && (loadState.status === 'loading' || loadState.status === 'loaded')) {
+    return { isWebFont: true, started: false };
+  }
+  return { isWebFont: true, started: true, promise: load(font) };
+}
+
+function explicitlyRequestWebFont(font) {
+  return requestExplicitWebFont(font, explicitlyRequestedWebFonts, webFontState(font), loadWebFont);
+}
+
+function requestWebFontsForSelectedIds(fontList, selectedIds, requestedFonts, load) {
+  fontList
+    .filter((font) => font.webFont && selectedIds.includes(font.id) && requestedFonts.has(font.id))
+    .forEach((font) => { load(font); });
+}
+
 function requestSelectedWebFonts() {
-  fonts.filter((font) => font.webFont && state.selectedIds.includes(font.id) && explicitlyRequestedWebFonts.has(font.id)).forEach((font) => { loadWebFont(font); });
+  requestWebFontsForSelectedIds(fonts, state.selectedIds, explicitlyRequestedWebFonts, loadWebFont);
 }
 
 function webFontLoadNotice(font) {
@@ -1161,7 +1181,7 @@ function renderSelector() {
         state.selectedIds = state.selectedIds.filter((id) => id !== font.id);
       }
       renderCards();
-      if (event.target.checked) loadWebFont(font);
+      if (event.target.checked) explicitlyRequestWebFont(font);
     });
     selector.appendChild(label);
   });
@@ -1256,7 +1276,10 @@ function renderCards() {
 
     card.querySelector('.select-memo-font')?.addEventListener('click', () => {
       selectedMemoFontId = font.id;
-      memoNexusStatus.textContent = `${font.name}を選択しました。内容を確認してMemo Nexusへ戻れます。`;
+      const request = explicitlyRequestWebFont(font);
+      memoNexusStatus.textContent = request.isWebFont
+        ? `${font.name}を選択しました。Webフォントの読込状態はカードに表示します。`
+        : `${font.name}を選択しました。内容を確認してMemo Nexusへ戻れます。`;
       renderCards();
     });
     card.querySelector('.retry-web-font')?.addEventListener('click', () => loadWebFont(font, { retry: true }));
