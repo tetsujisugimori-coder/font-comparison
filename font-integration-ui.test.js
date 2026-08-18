@@ -38,7 +38,7 @@ test('未確認情報を未対応と断定せず公式メタデータと分け�
   assert.match(app, /languages: \{ latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' \}/);
   assert.match(app, /SIL Open Font License 1\.1/);
   assert.match(app, /Microsoft製品付属（再配布は別途ライセンス確認）/);
-  assert.match(app, /収録文字情報は未確認です。未収録とは判定していません。/);
+  assert.match(app, /収録文字情報は未確認です。通常濃度の文字も収録済みとは判定していません。/);
   assert.match(app, /公式情報:/);
 });
 
@@ -130,8 +130,8 @@ test('WeightとStyleは全カード共通の個別フェイス情報として表
   assert.doesNotMatch(app, /Font Family:/);
   assert.match(app, /const fontFaceData = window\.FontFaceData/);
   assert.match(app, /const analyzed = fontFaceData\.fonts\?\.\[font\.id\]/);
-  assert.match(app, /loadedWeights: metadata\.loadedWeights \|\| font\.delivery\?\.weights/);
-  assert.match(app, /loadedStyles: webFont\.styles\.map/);
+  assert.match(app, /configuredWeights: webFont\.weights/);
+  assert.match(app, /function webFontVariantInfoRows\(font\)/);
   assert.doesNotMatch(app, /noto-sans-jp-web[\s\S]*?if \(font\.id === 'noto-sans-jp-web'\)/);
 });
 
@@ -155,6 +155,9 @@ test('Webフォントの読み込み中・失敗・再試行と、選択済み�
   assert.match(app, /web-font-status/);
   assert.match(css, /\.web-font-notice/);
   assert.match(app, /webFontFacePromises\.delete\(key\)/);
+  assert.match(app, /explicitlyRequestedWebFonts/);
+  assert.match(app, /coverageLoadText\(font\)/);
+  assert.doesNotMatch(app, /document\.fonts\.load\([^\n]+, 'A'\)/);
 });
 
 test('Webフォントの言語別注意とSource Han Sans CNの地域別字形を明示する', () => {
@@ -188,6 +191,22 @@ test('Weight・Style情報は既存の属性リストと狭幅対応を使い、
   assert.match(html, /font-face-data\.js[\s\S]*app\.js/);
   assert.match(fontFaceDataSource, /この検証環境（Windows）で確認済み/);
   assert.match(fs.readFileSync('font-metadata.js', 'utf8'), /このアプリで読み込み確認済み/);
+});
+
+test('Webフォントは解析済みの見本文字で読込を確認し、実行時成功だけを表示する', () => {
+  assert.match(app, /coverageApi\.codepointStatus\(font\.id, codepoint, coverageData\) !== 'supported'/);
+  assert.match(app, /読み込み対象:/);
+  assert.match(app, /解析ファイルで確認:/);
+  assert.match(app, /読み込み成功:/);
+  assert.match(app, /読み込み失敗:/);
+  assert.match(app, /ファミリー全体: 未確認/);
+  assert.doesNotMatch(app, /loadedWeights: webFont\.weights/);
+});
+
+test('Memo Nexusの全カード表示はWebフォントの一括取得を誘発しない', () => {
+  assert.match(app, /state\.selectedIds = fonts\.map/);
+  assert.match(app, /explicitlyRequestedWebFonts\.has\(font\.id\)/);
+  assert.match(app, /if \(font\.webFont\) explicitlyRequestedWebFonts\.add\(font\.id\)/);
 });
 
 test('OpenType機能ダイアログにはボタン、一覧、説明欄の要素があり、同一ダイアログを再利用する', () => {

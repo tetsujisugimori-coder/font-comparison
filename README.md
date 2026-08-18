@@ -20,28 +20,28 @@
 
 Windowsシステムフォントは、この検証環境の `C:\Windows\Fonts` にあるTTF / OTF / TTC / OTCをfontToolsで確認し、Font Family、OS/2の`usWeightClass`、専用Italicの有無を表示します。`font-face-data.js`には確認日、検証環境、解析元ファイル、TTC/OTCのfaceIndexを記録します。この結果は他のOSや別バージョンの同名フォントまで保証するものではありません。解析できなかったカードは推測せず未確認と表示します。
 
-Webフォントでは、フォントファミリー全体で利用できるWeightと、このアプリが実際に読み込むWeightを分けて扱います。現時点のNoto Sans JPは、このアプリのGoogle Fonts CSSで読み込み確認済みのRegular 400とBold 700、およびNormalを表示します。ファミリー全体のWeight / Styleは、別途確認できるまで未確認のままです。
+Webフォントでは、フォントファミリー全体で利用できるWeight、このアプリの読み込み対象、実行時に読み込み成功したWeightを分けて扱います。カードは選択前に`読み込み対象`を表示し、`Font Loading API`で成功したWeightだけを実行時の`読み込み成功`として表示します。ファミリー全体のWeight / Styleは、別途確認できるまで未確認のままです。
 
 Italicは専用書体が確認できた場合だけStyleとして扱います。ブラウザが通常書体を傾ける擬似Italicは、専用Italic対応とは表示しません。
 
 ## 選択時に読み込むWebフォント
 
-Webフォントは初期表示では取得せず、チェックボックスで選択したフォントだけを一度だけ読み込みます。Google Fonts配信は選択時にCSS stylesheetを追加し、`Font Loading API`で必要なWeightを読み込みます。Source Han SansはAdobe公式releaseの簡体字（CN）SubsetOTFを同APIで読み込みます。通常表示の対象はRegular 400、太字の表示を選んだときはBold 700で、専用Italicは今回読み込みません。
+Webフォントは初期表示では取得せず、チェックボックスで選択したフォントだけを一度だけ読み込みます。Google Fonts配信は選択時にCSS stylesheetを追加し、解析済みcmapに存在する見本文字を`Font Loading API`へ渡して必要なWeightを確認します。Source Han SansはAdobe公式タグ`2.005R`の簡体字（CN）SubsetOTFを同APIで読み込みます。通常表示の対象はRegular 400、太字の表示を選んだときはBold 700で、専用Italicは今回読み込みません。Memo Nexus連携モードで全カードを表示しても、明示操作前にWebフォントを取得しません。
 
 | フォント | 主対象・分類 | 配布元・ライセンス | 注意点 |
 | --- | --- | --- | --- |
-| Noto Sans JP | 日本語、ゴシック | Google Fonts / SIL Open Font License 1.1 | 既存のcmap・OpenType解析は指定CSSの400 / 700を対象にした結果です。 |
-| Noto Serif JP | 日本語、明朝・セリフ | Google Fonts / SIL Open Font License 1.1 | 日本語本文・見出し向けです。 |
-| Noto Sans SC | 簡体字中国語、ゴシック | Google Fonts / SIL Open Font License 1.1 | 日本語・繁体字は別フォントへフォールバックする場合があります。 |
-| Noto Sans TC | 繁体字中国語、ゴシック | Google Fonts / SIL Open Font License 1.1 | 日本語・簡体字は別フォントへフォールバックする場合があります。 |
-| Source Han Sans | 簡体字中国語、CJKゴシック | Adobe Source Han Sans release（jsDelivr経由）/ SIL Open Font License 1.1 | 現在はCNサブセットを読むため、CJKの地域別字形を日本語・繁体字用と混同しません。 |
-| Inter | ラテン文字、サンセリフ | Google Fonts / SIL Open Font License 1.1 | 日本語・中国語は原則として別フォントへフォールバックします。 |
-| IBM Plex Sans | ラテン文字、サンセリフ | Google Fonts / SIL Open Font License 1.1 | 日本語・中国語は原則として別フォントへフォールバックします。 |
-| JetBrains Mono | ラテン文字、等幅・コード向け | Google Fonts / SIL Open Font License 1.1 | コード見本にも適用します。日本語・中国語は別フォントへフォールバックします。 |
-| Zen Kaku Gothic New | 日本語、ゴシック | Google Fonts / SIL Open Font License 1.1 | 日本語本文・UI向けです。 |
-| Shippori Mincho | 日本語、明朝・セリフ | Google Fonts / SIL Open Font License 1.1 | 日本語本文・見出し向けです。 |
+| Noto Sans JP | 日本語、ゴシック | Google Fonts / SIL Open Font License 1.1 | CSSの400 / 700配信WOFF2を124ファイル解析済みです。 |
+| Noto Serif JP | 日本語、明朝・セリフ | Google Fonts / SIL Open Font License 1.1 | CSSの400 / 700配信WOFF2を124ファイル解析済みです。 |
+| Noto Sans SC | 簡体字中国語、ゴシック | Google Fonts / SIL Open Font License 1.1 | 101配信WOFF2を解析済み。日本語・繁体字は別フォントへフォールバックする場合があります。 |
+| Noto Sans TC | 繁体字中国語、ゴシック | Google Fonts / SIL Open Font License 1.1 | 105配信WOFF2を解析済み。日本語・簡体字は別フォントへフォールバックする場合があります。 |
+| Source Han Sans | 簡体字中国語、CJKゴシック | Adobe Source Han Sans `2.005R`（jsDelivr経由）/ SIL Open Font License 1.1 | CN SubsetOTF（Regular 8,429,224 bytes / Bold 8,569,308 bytes）を解析。地域別字形を日本語・繁体字用と混同しません。 |
+| Inter | ラテン文字、サンセリフ | Google Fonts / SIL Open Font License 1.1 | 7配信WOFF2を解析済み。日本語・中国語は原則として別フォントへフォールバックします。 |
+| IBM Plex Sans | ラテン文字、サンセリフ | Google Fonts / SIL Open Font License 1.1 | 6配信WOFF2を解析済み。日本語・中国語は原則として別フォントへフォールバックします。 |
+| JetBrains Mono | ラテン文字、等幅・コード向け | Google Fonts / SIL Open Font License 1.1 | 6配信WOFF2を解析済み。日本語・中国語は別フォントへフォールバックします。 |
+| Zen Kaku Gothic New | 日本語、ゴシック | Google Fonts / SIL Open Font License 1.1 | 242配信WOFF2を解析済みです。 |
+| Shippori Mincho | 日本語、明朝・セリフ | Google Fonts / SIL Open Font License 1.1 | 244配信WOFF2を解析済みです。 |
 
-各WebフォントのFamily全体で提供されるWeight・Style、cmap、OpenType機能は、個別に解析または確認できるまで未確認として扱います。カードの「対応文字種」は配布元・用途に基づく説明であり、個々の見本文字の収録判定とは混同しません。
+各Webフォントはこのアプリの400 / 700・Normal配信対象についてcmapとOpenType機能を解析済みです。Family全体で提供されるWeight・Styleは未確認のままです。カードの「対応文字種」は配布元・用途に基づく説明であり、個々の見本文字の収録判定とは混同しません。
 
 ## 薄い文字と収録状態
 
