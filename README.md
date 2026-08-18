@@ -59,6 +59,8 @@ Webフォントは初期表示では取得せず、チェックボックスで�
 
 ## 解析データの注意点
 
+- 起動時は`font-coverage-data.js`の圧縮済み`ranges`と`codepointCount`、`font-opentype-data.js`の統合済みOpenType機能一覧だけを読みます。ファイル別URL、SHA-256、`unicode-range`、User-Agentなどの解析証拠は、OpenType詳細ダイアログを開いたときにだけ`analysis-details/<font-id>.js`を従来型`script`として読みます。
+- 詳細JSにはフォント本体を含めません。同じ画面内で一度読んだ詳細はメモリ上で再利用し、読込失敗時は再試行できます。`file://`でも動かせるよう、JSONの`fetch()`やES Modulesの動的`import()`ではなく、許可済みIDとパスの対応表を使う`script`要素を採用しています。HTTPやGitHub Pagesでも同じ相対パスで配信されます。
 - 収録判定は `font-coverage-data.js` を生成した時点のフォントファイルに基づきます。
 - 収録判定は `font-coverage-data.js` に記録された解析フェイスを基準にします。太さを変更すると実際の表示で別ファイル・別フェイスが使われる可能性があり、その収録内容が解析フェイスと完全に同じであることは保証しません。
 - カードでは文字収録判定の解析元・バージョン・解析方法を確認できます。内部フェイス名とfaceIndexはTTC/OTCだけに表示し、通常のTTF/OTF/WOFF2では表示しません。未解析には推測した値を表示しません。
@@ -93,9 +95,9 @@ python -m pip install -r requirements-font-analysis.txt
 python analyze_google_fonts.py
 ```
 
-`analyze_google_fonts.py` は固定User-Agentで `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap` を取得し、すべての `@font-face`、ウェイト、unicode-range、WOFF2 URLを解析します。各ファイルのSHA-256、cmap、GSUB／GPOSタグ、統合タグ、CSS取得日、取得ホストを `font-coverage-data.js` と `font-opentype-data.js` に記録します。全ファイルの取得・解析が成功した場合だけ両方の出力を更新し、フォントファイル自体はメモリ上だけで処理します。Notoのcmapは全WOFF2の統合結果であり、1回の閲覧でブラウザが全ファイルを取得するという意味ではありません。
+`analyze_google_fonts.py` は固定User-Agentで `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap` を取得し、すべての `@font-face`、ウェイト、unicode-range、WOFF2 URLを解析します。圧縮済みcmapと統合タグは起動時サマリーへ、各ファイルのSHA-256、URL、`unicode-range`、GSUB／GPOSタグ、CSS取得日、取得ホストは`analysis-details/<font-id>.js`へ記録します。全ファイルの取得・解析が成功した場合だけサマリーと対象詳細をまとめて更新し、フォントファイル自体はメモリ上だけで処理します。`--font`による部分更新は、他フォントのサマリーや詳細JSを削除しません。Notoのcmapは全WOFF2の統合結果であり、1回の閲覧でブラウザが全ファイルを取得するという意味ではありません。
 
-2つの生成JSは、更新後の内容を両方とも一時ファイルへ作成して再読込検証した後に置換します。置換途中で失敗した場合は、すでに置換した側を元の内容へロールバックし、一時ファイルとバックアップを後始末します。
+サマリー2ファイルと対象詳細JSは、更新後の内容を一時ファイルへ作成して検証した後にまとめて置換します。置換途中で失敗した場合は、すでに置換した側を元の内容へロールバックします。ロールバックにも失敗したバックアップだけは、手動復旧用に残します。
 
 ## CIと手動ライブ解析
 
@@ -127,6 +129,12 @@ python analyze_font_cmap.py `
 ```
 
 出力には解析日時、表示名、ファイル名、内部フェイス名、フェイス番号、バージョン、コードポイント数、連続範囲へ圧縮したcmapを記録します。見つからないフォントや選べないフェイスは `not-analyzed` として記録します。
+
+解析データの容量は次で再計測できます。`font-coverage-data.js`、`font-opentype-data.js`、ローダー、全詳細JS、Noto Sans JP詳細JSのraw/gzipサイズを区別して出力します。
+
+```powershell
+node scripts/measure-analysis-data.mjs
+```
 
 ## ファイル構成
 

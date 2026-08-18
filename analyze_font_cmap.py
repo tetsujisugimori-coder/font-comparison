@@ -5,13 +5,19 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
+import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Iterable
 
 from fontTools.ttLib import TTCollection, TTFont, TTLibError
+
+
+SUMMARY_SCHEMA_VERSION = 2
+DETAIL_SCHEMA_VERSION = 1
 
 
 @dataclass(frozen=True)
@@ -319,27 +325,149 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument("--output", type=Path, default=Path("font-coverage-data.js"))
     parser.add_argument("--open-type-output", type=Path, default=Path("font-opentype-data.js"))
+    parser.add_argument("--details-dir", type=Path, default=Path("analysis-details"))
     return parser.parse_args()
 
 
-def write_javascript(
-    coverage_path: Path,
-    opentype_path: Path,
-    coverage_data: dict[str, object],
-    open_type_data: dict[str, object],
-) -> None:
-    coverage_serialized = json.dumps(coverage_data, ensure_ascii=False, separators=(",", ":"))
-    coverage_path.write_text(
-        "/* analyze_font_cmap.py で生成。フォントファイル自体は含みません。 */\n"
-        f"window.FontCoverageData = {coverage_serialized};\n",
-        encoding="utf-8",
+def serialize_javascript_data(variable_name: str, comment: str, data: dict[str, object]) -> str:
+    return f"/* {comment} */\nwindow.{variable_name} = {json.dumps(data, ensure_ascii=False, separators=(',', ':'))};\n"
+
+
+def serialize_detail_javascript(font_id: str, detail: dict[str, object]) -> str:
+    return (
+        "/* 解析証拠の詳細。フォントファイル自体は含みません。 */\n"
+        "window.FontAnalysisDetails = window.FontAnalysisDetails || {};\n"
+        f"window.FontAnalysisDetails[{json.dumps(font_id, ensure_ascii=False)}] = {json.dumps(detail, ensure_ascii=False, separators=(',', ':'))};\n"
     )
-    open_type_serialized = json.dumps(open_type_data, ensure_ascii=False, separators=(",", ":"))
-    opentype_path.write_text(
-        "/* analyze_font_cmap.py で生成。OpenType機能用データ。フォントファイル自体は含みません。 */\n"
-        f"window.FontOpenTypeData = {open_type_serialized};\n",
-        encoding="utf-8",
+
+
+def create_temporary_file(target: Path, contents: str) -> Path:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".tmp", dir=target.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as output:
+            output.write(contents)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+    return temporary
+
+
+def replace_prepared_outputs(prepared: list[tuple[Path, Path]]) -> None:
+    originals = {target: target.read_bytes() if target.exists() else None for _temporary, target in prepared}
+    backups: dict[Path, Path | None] = {}
+    replaced: list[Path] = []
+    preserved_backups: set[Path] = set()
+    try:
+        for _temporary, target in prepared:
+            original = originals[target]
+            if original is None:
+                backups[target] = None
+                continue
+            descriptor, backup_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".bak", dir=target.parent)
+            backup = Path(backup_name)
+            with os.fdopen(descriptor, "wb") as output:
+                output.write(original)
+            backups[target] = backup
+        for temporary, target in prepared:
+            os.replace(temporary, target)
+            replaced.append(target)
+    except Exception as error:
+        rollback_errors: list[str] = []
+        for target in reversed(replaced):
+            try:
+                backup = backups.get(target)
+                if backup is None:
+                    target.unlink(missing_ok=True)
+                else:
+                    os.replace(backup, target)
+                    backups[target] = None
+            except Exception as rollback_error:
+                backup = backups.get(target)
+                if backup is not None:
+                    preserved_backups.add(backup)
+                    rollback_errors.append(f"対象 {target} をバックアップ {backup} から復元できませんでした: {rollback_error}")
+                else:
+                    rollback_errors.append(f"対象 {target} を削除して復元できませんでした: {rollback_error}")
+        message = f"生成データの置換に失敗しました: {error}"
+        if rollback_errors:
+            message += f"; ロールバックにも失敗しました: {'; '.join(rollback_errors)}"
+        raise RuntimeError(message) from error
+    finally:
+        for temporary, _target in prepared:
+            temporary.unlink(missing_ok=True)
+        for backup in backups.values():
+            if backup is not None and backup not in preserved_backups:
+                backup.unlink(missing_ok=True)
+
+
+def split_analysis_entries(font_id: str, coverage: dict[str, object], open_type: dict[str, object]) -> tuple[dict[str, object], dict[str, object], dict[str, object]]:
+    """起動時サマリーと、ファイル証拠を一つに正規化した詳細へ分離する。"""
+    status = str(open_type.get("status") or coverage.get("status") or "not-analyzed")
+    has_details = status == "analyzed"
+    common_keys = (
+        "fontName", "status", "sourceType", "fileName", "faceIndex", "faceName", "fontVersion",
+        "fontVersions", "fontVersionMissingFiles", "requestedWeights", "requestedStyles", "fileCount",
+        "analysisDate", "reason", "caveat", "sourceNote",
     )
+    common = {key: open_type.get(key, coverage.get(key)) for key in common_keys if open_type.get(key, coverage.get(key)) is not None}
+    marker = {"schemaVersion": SUMMARY_SCHEMA_VERSION, "detailSchemaVersion": DETAIL_SCHEMA_VERSION if has_details else None, "hasDetails": has_details}
+    coverage_summary = {
+        **common, **marker,
+        "codepointCount": coverage.get("codepointCount"), "ranges": coverage.get("ranges", []),
+        "analysisTarget": coverage.get("analysisTarget"), "analysisMethod": coverage.get("analysisMethod"),
+    }
+    open_type_summary = {
+        **common, **marker,
+        "features": open_type.get("features", []),
+        "analysisTarget": open_type.get("analysisTarget"), "analysisMethod": open_type.get("analysisMethod"),
+    }
+    evidence = {**coverage, **open_type}
+    files = open_type.get("files") if isinstance(open_type.get("files"), list) else coverage.get("files", [])
+    for key in ("files", "ranges", "features", "codepointCount", "analysisTarget", "analysisMethod", "caveat"):
+        evidence.pop(key, None)
+    evidence["files"] = files
+    detail = {
+        "schemaVersion": DETAIL_SCHEMA_VERSION,
+        "fontId": font_id,
+        "evidence": evidence,
+        "coverage": {key: coverage[key] for key in ("analysisTarget", "analysisMethod", "caveat") if coverage.get(key) is not None},
+        "openType": {key: open_type[key] for key in ("analysisTarget", "analysisMethod", "caveat") if open_type.get(key) is not None},
+    }
+    return coverage_summary, open_type_summary, detail
+
+
+def load_javascript_data(path: Path, variable_name: str) -> dict[str, object]:
+    match = re.search(rf"window\.{re.escape(variable_name)}\s*=\s*(\{{.*\}});\s*$", path.read_text(encoding="utf-8"), flags=re.DOTALL)
+    if not match:
+        raise ValueError(f"既存データを読み取れません: {path}")
+    return json.loads(match.group(1))
+
+
+def write_javascript(coverage_path: Path, opentype_path: Path, coverage_data: dict[str, object], open_type_data: dict[str, object], details_dir: Path, updated_ids: set[str] | None = None) -> None:
+    existing_coverage = load_javascript_data(coverage_path, "FontCoverageData") if updated_ids and coverage_path.exists() else {"fonts": {}}
+    existing_opentype = load_javascript_data(opentype_path, "FontOpenTypeData") if updated_ids and opentype_path.exists() else {"fonts": {}}
+    coverage_fonts: dict[str, object] = dict(existing_coverage.get("fonts", {}))
+    opentype_fonts: dict[str, object] = dict(existing_opentype.get("fonts", {}))
+    prepared: list[tuple[Path, Path]] = []
+    target_ids = updated_ids or set(coverage_data["fonts"])
+    for font_id in target_ids:
+        coverage = coverage_data["fonts"][font_id]
+        open_type = open_type_data["fonts"][font_id]
+        coverage_summary, opentype_summary, detail = split_analysis_entries(font_id, coverage, open_type)
+        coverage_fonts[font_id] = coverage_summary
+        opentype_fonts[font_id] = opentype_summary
+        if detail["evidence"].get("status") == "analyzed":
+            target = details_dir / f"{font_id}.js"
+            prepared.append((create_temporary_file(target, serialize_detail_javascript(font_id, detail)), target))
+    coverage_summary_data = {"schemaVersion": SUMMARY_SCHEMA_VERSION, "generatedAt": coverage_data["generatedAt"], "fonts": coverage_fonts}
+    open_type_summary_data = {"schemaVersion": SUMMARY_SCHEMA_VERSION, "generatedAt": open_type_data["generatedAt"], "fonts": opentype_fonts}
+    prepared.extend([
+        (create_temporary_file(coverage_path, serialize_javascript_data("FontCoverageData", "cmap起動時サマリー。ファイル別の解析証拠はanalysis-detailsに分離。", coverage_summary_data)), coverage_path),
+        (create_temporary_file(opentype_path, serialize_javascript_data("FontOpenTypeData", "OpenType起動時サマリー。ファイル別の解析証拠はanalysis-detailsに分離。", open_type_summary_data)), opentype_path),
+    ])
+    replace_prepared_outputs(prepared)
 
 
 def main() -> int:
@@ -350,7 +478,7 @@ def main() -> int:
         analyzed = build_output(font_paths, face_names, args.font_dir)
         coverage_data = analyzed["coverage"]
         open_type_data = analyzed["openType"]
-        write_javascript(args.output, args.open_type_output, coverage_data, open_type_data)
+        write_javascript(args.output, args.open_type_output, coverage_data, open_type_data, args.details_dir, set(font_paths) or None)
     except (OSError, ValueError) as error:
         print(f"エラー: {error}", file=sys.stderr)
         return 2

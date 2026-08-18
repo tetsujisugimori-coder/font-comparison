@@ -21,7 +21,15 @@ from urllib.request import Request, urlopen
 
 from fontTools.ttLib import TTFont, TTLibError
 
-from analyze_font_cmap import analyze_features, compress_codepoints, face_metadata
+from analyze_font_cmap import (
+    DETAIL_SCHEMA_VERSION,
+    SUMMARY_SCHEMA_VERSION,
+    analyze_features,
+    compress_codepoints,
+    face_metadata,
+    serialize_detail_javascript,
+    split_analysis_entries,
+)
 
 
 DEFAULT_CSS_URL = "https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap"
@@ -361,6 +369,7 @@ def serialize_javascript_data(variable_name: str, comment: str, data: dict[str, 
 
 
 def create_temporary_file(target: Path, contents: str, suffix: str = ".tmp") -> Path:
+    target.parent.mkdir(parents=True, exist_ok=True)
     descriptor, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=suffix, dir=target.parent)
     temporary = Path(temporary_name)
     try:
@@ -440,26 +449,35 @@ def update_outputs(
     opentype_path: Path,
     coverage_path: Path,
     results: dict[str, dict[str, dict[str, object]]] | dict[str, dict[str, object]],
+    details_dir: Path | None = None,
 ) -> None:
-    """全対象の一時出力検証後に、2つの生成データを原子的に置換する。"""
+    """全対象の一時出力検証後に、サマリーと詳細JSを同時に置換する。"""
     if "openType" in results and "coverage" in results:
         results = {FONT_ID: results}  # 後方互換: 既存の単一フォント呼び出し。
+    details_dir = details_dir or opentype_path.parent / "analysis-details"
     typed_results = results
     opentype_data = load_javascript_data(opentype_path, "FontOpenTypeData")
     coverage_data = load_javascript_data(coverage_path, "FontCoverageData")
+    detail_outputs: list[tuple[Path, dict[str, object]]] = []
     for font_id, result in typed_results.items():
-        opentype_data.setdefault("fonts", {})[font_id] = result["openType"]
-        coverage_data.setdefault("fonts", {})[font_id] = result["coverage"]
+        coverage_summary, opentype_summary, detail = split_analysis_entries(font_id, result["coverage"], result["openType"])
+        opentype_data.setdefault("fonts", {})[font_id] = opentype_summary
+        coverage_data.setdefault("fonts", {})[font_id] = coverage_summary
+        detail_outputs.append((details_dir / f"{font_id}.js", detail))
     dates = {str(result["openType"]["analysisDate"]) for result in typed_results.values()}
     if len(dates) != 1:
         raise GoogleFontsAnalysisError("複数フォントの解析日が一致しません。")
     generated_at = dates.pop()
     opentype_data["generatedAt"] = generated_at
     coverage_data["generatedAt"] = generated_at
+    opentype_data["schemaVersion"] = SUMMARY_SCHEMA_VERSION
+    coverage_data["schemaVersion"] = SUMMARY_SCHEMA_VERSION
     prepared: list[tuple[Path, Path]] = []
     try:
-        prepared.append((create_temporary_file(opentype_path, serialize_javascript_data("FontOpenTypeData", "OpenType解析スクリプトで生成。フォントファイル自体は含みません。", opentype_data)), opentype_path))
-        prepared.append((create_temporary_file(coverage_path, serialize_javascript_data("FontCoverageData", "cmap解析スクリプトで生成。フォントファイル自体は含みません。", coverage_data)), coverage_path))
+        prepared.append((create_temporary_file(opentype_path, serialize_javascript_data("FontOpenTypeData", "OpenType起動時サマリー。ファイル別の解析証拠はanalysis-detailsに分離。", opentype_data)), opentype_path))
+        prepared.append((create_temporary_file(coverage_path, serialize_javascript_data("FontCoverageData", "cmap起動時サマリー。ファイル別の解析証拠はanalysis-detailsに分離。", coverage_data)), coverage_path))
+        for target, detail in detail_outputs:
+            prepared.append((create_temporary_file(target, serialize_detail_javascript(target.stem, detail)), target))
         validate_temporary_javascript_data(prepared[0][0], "FontOpenTypeData", typed_results)
         validate_temporary_javascript_data(prepared[1][0], "FontCoverageData", typed_results)
         replace_prepared_outputs(prepared)
@@ -479,6 +497,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--user-agent", default=DEFAULT_USER_AGENT)
     parser.add_argument("--output", type=Path, default=Path("font-opentype-data.js"))
     parser.add_argument("--coverage-output", type=Path, default=Path("font-coverage-data.js"))
+    parser.add_argument("--details-dir", type=Path, default=Path("analysis-details"))
     return parser.parse_args()
 
 
@@ -512,7 +531,7 @@ def main() -> int:
     try:
         targets = selected_targets(args)
         results = analyze_targets(targets, args.user_agent, fetched_on, downloader=fetch_bytes)
-        update_outputs(args.output, args.coverage_output, results)
+        update_outputs(args.output, args.coverage_output, results, getattr(args, "details_dir", None))
     except (GoogleFontsAnalysisError, UnicodeError, OSError, ValueError) as error:
         print(f"エラー: {error}", file=sys.stderr)
         return 2
