@@ -1,3 +1,12 @@
+## 2026-08-18 PR #7: cmap/ OpenType情報分離とCI追加
+
+- 原因: カードの「解析フォント」は `font-coverage-data.js` のcmap解析結果をOpenType解析結果のように混在表示していた。
+- 対応: 文字収録判定の解析元・版・解析方法をcmap情報として独立表示し、OpenType機能はダイアログでGSUB/GPOS情報として表示するよう分離した。
+- Noto Sans JPはGoogle Fonts CSSの124 WOFF2を解析し、cmapを統合した。2026-08-18の結果は16,657コードポイント、`Version 2.004-H2;hotconv 1.0.118;makeotfexe 2.5.65603`、OpenType機能11件（`ccmp`、`halt`、`kern`、`liga`、`locl`、`palt`、`vert`、`vhal`、`vkrn`、`vpal`、`vrt2`）。
+- 通常のTTF/OTF/WOFF2では内部フェイスを表示せず、TTC/OTCだけにfaceIndex付きで表示する。未解析には推測値を出さない。
+- `.github/workflows/ci.yml` にフィクスチャ専用CIを、`.github/workflows/live-google-fonts-analysis.yml` に手動の実解析・アーティファクト出力を追加した。いずれも読み取り専用権限で、自動コミット・フォントバイナリ保存はしない。
+- Nodeテスト、Pythonフィクスチャテスト、構文検査、実Google Fonts解析、差分空白検査を実施する。ブラウザのPC/モバイル、ライト/ダーク、キーボード操作確認はこの後に実施する。
+
 ## 2026-08-18 cmap収録文字調査と未収録文字表示
 
 ### 目的

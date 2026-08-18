@@ -12,6 +12,8 @@ const noto = data.fonts['noto-sans-jp-web'];
 
 test('Noto Sans JPは指定Google Fonts CSSの全配信ファイル解析結果を持つ', () => {
   assert.equal(noto.status, 'analyzed');
+  assert.equal(noto.sourceType, 'web');
+  assert.equal(noto.analysisTarget, 'Google Fonts CSSに定義されたWOFF2');
   assert.equal(noto.cssUrl, 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
   assert.deepEqual([...noto.requestedWeights], [400, 700]);
   assert.equal(noto.cssHost, 'fonts.googleapis.com');
@@ -19,6 +21,7 @@ test('Noto Sans JPは指定Google Fonts CSSの全配信ファイル解析結果�
   assert.equal(noto.fontFaceCount, 248);
   assert.equal(noto.fileCount, 124);
   assert.equal(noto.files.length, 124);
+  assert.match(noto.fontVersion, /^Version 2\.004-H2/);
   assert.equal(noto.files.filter((file) => file.weights.includes(400)).length, 124);
   assert.equal(noto.files.filter((file) => file.weights.includes(700)).length, 124);
 });
@@ -28,6 +31,7 @@ test('各WOFF2はunicode-range、SHA-256、ウェイト、解析結果を保持�
     assert.match(file.url, /^https:\/\/fonts\.gstatic\.com\/.+\.woff2$/);
     assert.ok(file.unicodeRanges.length > 0);
     assert.match(file.sha256, /^[0-9a-f]{64}$/);
+    assert.match(file.fileName, /\.woff2$/);
     assert.ok(file.weights.length > 0);
     assert.ok(Array.isArray(file.features));
   }

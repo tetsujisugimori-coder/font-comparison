@@ -149,6 +149,11 @@ function buildOpenTypeProfile(fontId) {
       faceName: entry.faceName || null,
       faceIndex: entry.faceIndex ?? null,
       fontVersion: entry.fontVersion || null,
+      fontVersions: Array.isArray(entry.fontVersions) ? entry.fontVersions : [],
+      fontVersionMissingFiles: Array.isArray(entry.fontVersionMissingFiles) ? entry.fontVersionMissingFiles : [],
+      sourceType: entry.sourceType || null,
+      analysisTarget: entry.analysisTarget || null,
+      caveat: entry.caveat || null,
       analysisDate: entry.analysisDate || null,
       analysisMethod: entry.analysisMethod || 'fontTools FeatureList解析（GSUB/GPOS）',
       cssUrl: entry.cssUrl || null,
@@ -551,23 +556,7 @@ const officialFontMetadata = {
 const openTypeData = window.FontOpenTypeData || { fonts: {} };
 
 function normalizeOpenTypeProfile(fontId) {
-  const entry = openTypeData.fonts?.[fontId];
-  if (!entry || entry.status !== 'analyzed') {
-    return buildOpenTypeProfile(fontId);
-  }
-  const profile = buildOpenTypeProfile(fontId);
-  return {
-    ...profile,
-    analysis: {
-      ...profile.analysis,
-      ...Object.fromEntries(
-        ['analysisDate', 'analysisMethod', 'faceIndex', 'faceName', 'fileName', 'fontVersion'].map((key) => [
-          key,
-          profile.analysis?.[key] || null
-        ])
-      )
-    }
-  };
+  return buildOpenTypeProfile(fontId);
 }
 
 fonts.forEach((font) => Object.assign(font, memoFontMetadata[font.id], officialFontMetadata[font.id], {
@@ -738,7 +727,8 @@ function openTypeFeatureDialogForFont(font, triggerButton) {
   const meta = profile?.analysis || {};
   const rows = openTypeFeatureRows(font);
   const source = font?.delivery || font?.sourceInfo || {};
-  const isGoogleFonts = Boolean(meta.cssUrl);
+  const isGoogleFonts = meta.sourceType === 'web' || Boolean(meta.cssUrl);
+  const fontVersion = formatFontVersion(meta);
 
   openTypeDialogTitle.textContent = `${font?.name || ''}`;
   openTypeDialogMeta.innerHTML = [
@@ -751,7 +741,8 @@ function openTypeFeatureDialogForFont(font, triggerButton) {
   ].join('');
   openTypeDialogFiles.innerHTML = isGoogleFonts
     ? [
-        '<li><strong>解析対象:</strong> Google Fonts CSSに定義されたWOFF2</li>',
+        `<li><strong>解析対象:</strong> ${escapeHtml(meta.analysisTarget || 'Google Fonts CSSに定義されたWOFF2')}</li>`,
+        fontVersion ? `<li><strong>フォントバージョン:</strong> ${escapeHtml(fontVersion)}</li>` : '',
         `<li><strong>CSS API:</strong> ${escapeHtml(meta.cssUrl)}</li>`,
         `<li><strong>CSS取得日:</strong> ${escapeHtml(meta.cssFetchedAt || meta.analysisDate || '未確認')}</li>`,
         `<li><strong>User-Agent:</strong> ${escapeHtml(meta.userAgent || '未確認')}</li>`,
@@ -759,7 +750,7 @@ function openTypeFeatureDialogForFont(font, triggerButton) {
         `<li><strong>解析ファイル数:</strong> ${escapeHtml(meta.fileCount ?? '未確認')}件</li>`
       ].join('')
     : [
-        `<li><strong>解析対象:</strong> ${escapeHtml([meta.fileName, meta.faceName, meta.fontVersion].filter(Boolean).join(' / ') || '未確認')}</li>`
+        `<li><strong>解析対象:</strong> ${escapeHtml(openTypeAnalysisTarget(meta) || '未確認')}</li>`
       ].join('');
   openTypeDialogSummary.innerHTML = [
     `<li><strong>OpenType解析:</strong> ${profile.verified ? '解析済み' : '未解析'}</li>`,
@@ -769,7 +760,7 @@ function openTypeFeatureDialogForFont(font, triggerButton) {
     `<li><strong>説明付きで掲載している機能数:</strong> ${rows.length}件</li>`
   ].join('');
   openTypeDialogDisclaimer.textContent = isGoogleFonts
-    ? 'Google FontsのCSSに定義された複数の配信ファイルを解析し、確認できたOpenType機能を統合して表示しています。実際にブラウザが取得するファイルは、表示する文字やブラウザ環境によって異なる場合があります。'
+    ? `Google FontsのCSSに定義された複数の配信ファイルを解析し、確認できたOpenType機能を統合して表示しています。実際にブラウザが取得するファイルは、表示する文字やブラウザ環境によって異なる場合があります。${meta.caveat || ''}`
     : 'これらは解析したフォントのGSUB／GPOS FeatureListに基づく確認です。閲覧環境のフォント版が解析対象と異なる場合があります。';
   const sourceUrl = font?.sourceUrl || '';
   openTypeDialogOfficial.innerHTML = `<strong>公式情報:</strong> <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(sourceUrl || '未確認')}</a>`;
@@ -830,26 +821,59 @@ function bindOpenTypeDialogEvents() {
 function coverageMetadata(font) {
   return coverageData?.fonts?.[font.id] || {
     status: 'not-analyzed',
-    fileName: null,
-    faceName: null,
-    fontVersion: null
+    reason: 'フォントファイルを確認できていません。'
   };
 }
 
-function coverageStatusLabel(coverage) {
-  return coverage.status === 'analyzed' ? '解析済み' : '解析未実施';
+function formatFontVersion(metadata, options) {
+  return window.FontMetadata?.formatFontVersion(metadata, options) || '';
+}
+
+function shouldDisplayInternalFace(metadata) {
+  return Boolean(window.FontMetadata?.isFontCollection(metadata) && metadata.faceName);
+}
+
+function safeCoverageReason(coverage) {
+  return window.FontMetadata?.safeUnparsedReason(coverage) || 'フォントファイルを確認できていません。';
+}
+
+function openTypeAnalysisTarget(meta) {
+  const target = [meta.fileName, formatFontVersion(meta)];
+  if (shouldDisplayInternalFace(meta)) target.splice(1, 0, `${meta.faceName}（faceIndex ${meta.faceIndex}）`);
+  return target.filter(Boolean).join(' / ');
+}
+
+function webCoverageAnalysisRows(coverage) {
+  return [
+    `<li>文字収録判定の解析元: ${escapeHtml(coverage.analysisTarget || 'Google Fonts配信WOFF2')}</li>`,
+    formatFontVersion(coverage, { compact: true }) ? `<li>フォントバージョン: ${escapeHtml(formatFontVersion(coverage, { compact: true }))}</li>` : '',
+    coverage.analysisMethod ? `<li>解析方法: ${escapeHtml(coverage.analysisMethod)}</li>` : '',
+    coverage.caveat ? `<li>文字収録情報: ${escapeHtml(coverage.caveat)}</li>` : ''
+  ].join('');
+}
+
+function coverageAnalysisRows(coverage) {
+  if (coverage.status !== 'analyzed') {
+    return `<li>文字収録判定: 未解析</li><li>理由: ${escapeHtml(safeCoverageReason(coverage))}</li>`;
+  }
+  if (coverage.sourceType === 'web') return webCoverageAnalysisRows(coverage);
+  const rows = [
+    `<li>文字収録判定の解析元: ${escapeHtml(coverage.fileName || '確認済みの解析元なし')}</li>`,
+    formatFontVersion(coverage, { compact: true }) ? `<li>フォントバージョン: ${escapeHtml(formatFontVersion(coverage, { compact: true }))}</li>` : ''
+  ];
+  if (shouldDisplayInternalFace(coverage)) rows.push(`<li>内部フェイス: ${escapeHtml(`${coverage.faceName}（faceIndex ${coverage.faceIndex}）`)}</li>`);
+  return rows.join('');
 }
 
 function officialMetadataHtml(font) {
   const coverage = coverageMetadata(font);
   const sourceUrl = escapeHtml(font.sourceUrl);
-  const delivery = font.delivery || {};
   return `
     <li>公式に確認した文字体系: ${font.officialScripts.map(escapeHtml).join(' / ')}</li>
-    <li>見本文字の収録判定: ${coverageStatusLabel(coverage)}（言語対応とは別のcmap情報）</li>
+    <li>見本文字の収録判定は言語対応とは別のcmap情報です。</li>
     <li>取得元: ${escapeHtml(font.delivery?.environment || font.attributes?.environment || '-')}</li>
     <li>配信/読み込み情報: ${escapeHtml(font.delivery?.provider || font.source || '-')} / ${escapeHtml(font.delivery?.loadingMethod || '-')}</li>
-    <li>解析フォント: ${escapeHtml(coverage.fontVersion || '未確認')} / ${escapeHtml(coverage.fileName || '未確認')} / ${escapeHtml(coverage.faceName || '内部フェイス未確認')}</li>
+    ${coverageAnalysisRows(coverage)}
     <li>確認日: ${escapeHtml(font.metadataConfirmedAt)}</li>
     <li>ライセンス: ${escapeHtml(font.license)}</li>
     <li>公式情報: <a href="${sourceUrl}" target="_blank" rel="noopener noreferrer">${sourceUrl}</a></li>

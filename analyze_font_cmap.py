@@ -90,7 +90,7 @@ def face_score(metadata: dict[str, object], expected_names: Iterable[str]) -> in
 
 
 def open_faces(path: Path) -> list[TTFont]:
-    if path.suffix.casefold() == ".ttc":
+    if path.suffix.casefold() in {".ttc", ".otc"}:
         return TTCollection(path, lazy=True).fonts
     return [TTFont(path, lazy=True)]
 
@@ -199,6 +199,7 @@ def analyze_font(target: FontTarget, path: Path, requested_face: str | None) -> 
         cover = {
             "fontName": target.label,
             "status": "analyzed",
+            "sourceType": "collection" if path.suffix.casefold() in {".ttc", ".otc"} else "file",
             "fileName": path.name,
             "faceIndex": face_index,
             "faceName": (metadata["fullNames"] or metadata["familyNames"] or ["未確認"])[0],
@@ -209,6 +210,7 @@ def analyze_font(target: FontTarget, path: Path, requested_face: str | None) -> 
         feature = {
             "fontName": target.label,
             "status": "analyzed",
+            "sourceType": "collection" if path.suffix.casefold() in {".ttc", ".otc"} else "file",
             "fileName": path.name,
             "faceIndex": face_index,
             "faceName": (metadata["fullNames"] or metadata["familyNames"] or ["未確認"])[0],

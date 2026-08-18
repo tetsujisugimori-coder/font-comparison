@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import argparse
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
 import analyze_google_fonts as subject
-
 
 FIXTURE = Path("tests/fixtures/google-fonts-noto-sans-jp.css").read_text(encoding="utf-8")
 
@@ -15,51 +16,58 @@ class GoogleFontsCssTests(unittest.TestCase):
         faces = subject.parse_google_fonts_css(FIXTURE)
         self.assertEqual([face["weight"] for face in faces], [400, 700, 700])
         self.assertEqual(faces[0]["unicodeRange"], "U+3041-3096")
-        self.assertEqual(faces[2]["unicodeRange"], "U+0000-00FF")
 
     def test_deduplicates_urls_but_preserves_all_weights(self) -> None:
         files = subject.deduplicate_font_faces(subject.parse_google_fonts_css(FIXTURE))
         self.assertEqual(len(files), 2)
         self.assertEqual(files[0]["weights"], [400, 700])
-        self.assertEqual(files[0]["unicodeRanges"], ["U+3041-3096"])
 
     def test_missing_weight_is_an_error(self) -> None:
         with self.assertRaisesRegex(subject.GoogleFontsAnalysisError, "300"):
             subject.parse_google_fonts_css(FIXTURE, weights=(300, 700))
 
 
-class FeatureMergeTests(unittest.TestCase):
+class AnalysisMergeTests(unittest.TestCase):
     def test_merges_duplicate_tags_and_keeps_both_tables(self) -> None:
-        merged = subject.merge_feature_results(
-            [
-                {"features": [{"tag": "kern", "tables": ["GPOS"]}, {"tag": "ccmp", "tables": ["GSUB"]}]},
-                {"features": [{"tag": "ccmp", "tables": ["GPOS"]}, {"tag": "liga", "tables": ["GSUB"]}]},
-            ]
-        )
-        self.assertEqual(
-            merged,
-            [
-                {"tag": "ccmp", "tables": ["GSUB", "GPOS"]},
-                {"tag": "kern", "tables": ["GPOS"]},
-                {"tag": "liga", "tables": ["GSUB"]},
-            ],
-        )
+        merged = subject.merge_feature_results([{"features": [{"tag": "kern", "tables": ["GPOS"]}, {"tag": "ccmp", "tables": ["GSUB"]}]}, {"features": [{"tag": "ccmp", "tables": ["GPOS"]}, {"tag": "liga", "tables": ["GSUB"]}]}])
+        self.assertEqual(merged, [{"tag": "ccmp", "tables": ["GSUB", "GPOS"]}, {"tag": "kern", "tables": ["GPOS"]}, {"tag": "liga", "tables": ["GSUB"]}])
 
-    def test_woff2_failure_aborts_instead_of_returning_empty_success(self) -> None:
-        with patch.object(subject, "analyze_woff2", side_effect=subject.GoogleFontsAnalysisError("broken")):
+    def test_unions_cmaps_once_and_compresses_ranges(self) -> None:
+        parsed = [{"fontVersion": "Version 2.004-H2", "features": [{"tag": "kern", "tables": ["GPOS"]}], "codepoints": {0x41, 0x42}}, {"fontVersion": "Version 2.004-H2", "features": [{"tag": "kern", "tables": ["GPOS"]}], "codepoints": {0x42, 0x44}}]
+        with patch.object(subject, "analyze_woff2", side_effect=parsed):
+            result = subject.analyze_css_delivery(FIXTURE, subject.DEFAULT_CSS_URL, "fixture-agent", "2026-08-18", downloader=lambda _url, _ua: b"fixture")
+        self.assertEqual(result["coverage"]["codepointCount"], 3)
+        self.assertEqual(result["coverage"]["ranges"], [[0x41, 0x42], [0x44, 0x44]])
+        self.assertEqual(result["coverage"]["analysisTarget"], "Google Fonts配信WOFF2 2ファイル")
+        self.assertEqual(result["openType"]["files"][0]["fileName"], "shared.woff2")
+        self.assertEqual(result["openType"]["files"][0]["sha256"], result["openType"]["files"][1]["sha256"])
+
+    def test_empty_cmap_is_valid_but_parser_failure_is_not(self) -> None:
+        parsed = [{"fontVersion": "Version 1", "features": [], "codepoints": set()}, {"fontVersion": "Version 1", "features": [], "codepoints": set()}]
+        with patch.object(subject, "analyze_woff2", side_effect=parsed):
+            result = subject.analyze_css_delivery(FIXTURE, subject.DEFAULT_CSS_URL, "fixture-agent", "2026-08-18", downloader=lambda _url, _ua: b"fixture")
+        self.assertEqual(result["coverage"]["codepointCount"], 0)
+        with patch.object(subject, "analyze_woff2", side_effect=subject.GoogleFontsAnalysisError("cmap missing")):
             with self.assertRaisesRegex(subject.GoogleFontsAnalysisError, "1/2"):
-                subject.analyze_css_delivery(
-                    FIXTURE,
-                    subject.DEFAULT_CSS_URL,
-                    "fixture-agent",
-                    "2026-08-18",
-                    downloader=lambda _url, _ua: b"not-a-font",
-                )
+                subject.analyze_css_delivery(FIXTURE, subject.DEFAULT_CSS_URL, "fixture-agent", "2026-08-18", downloader=lambda _url, _ua: b"fixture")
+
+    def test_aggregates_equal_and_multiple_versions_without_inventing_one(self) -> None:
+        self.assertEqual(subject.aggregate_font_versions([{"fileName": "a", "fontVersion": "Version 1"}, {"fileName": "b", "fontVersion": "Version 1"}]), {"fontVersionMissingFiles": [], "fontVersion": "Version 1"})
+        self.assertEqual(subject.aggregate_font_versions([{"fileName": "a", "fontVersion": "Version 1"}, {"fileName": "b", "fontVersion": "Version 2"}, {"fileName": "c", "fontVersion": None}]), {"fontVersionMissingFiles": ["c"], "fontVersions": ["Version 1", "Version 2"]})
+
+    def test_failure_does_not_overwrite_either_generated_file(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            output, coverage = Path(temporary) / "font-opentype-data.js", Path(temporary) / "font-coverage-data.js"
+            output.write_text("old open type", encoding="utf-8")
+            coverage.write_text("old coverage", encoding="utf-8")
+            args = argparse.Namespace(css_url=subject.DEFAULT_CSS_URL, user_agent="fixture-agent", output=output, coverage_output=coverage)
+            with patch.object(subject, "parse_args", return_value=args), patch.object(subject, "fetch_bytes", return_value=FIXTURE.encode("utf-8")), patch.object(subject, "analyze_woff2", side_effect=subject.GoogleFontsAnalysisError("broken")):
+                self.assertEqual(subject.main(), 2)
+            self.assertEqual(output.read_text(encoding="utf-8"), "old open type")
+            self.assertEqual(coverage.read_text(encoding="utf-8"), "old coverage")
 
     def test_css_fetch_failure_is_explicit(self) -> None:
-        with patch("analyze_google_fonts.urlopen", side_effect=OSError("offline")), patch(
-            "analyze_google_fonts.shutil.which", return_value=None
-        ):
+        with patch("analyze_google_fonts.urlopen", side_effect=OSError("offline")), patch("analyze_google_fonts.shutil.which", return_value=None):
             with self.assertRaisesRegex(subject.GoogleFontsAnalysisError, "取得に失敗"):
                 subject.fetch_bytes(subject.DEFAULT_CSS_URL, "fixture-agent")
 

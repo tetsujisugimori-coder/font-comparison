@@ -32,7 +32,7 @@
 
 - 収録判定は `font-coverage-data.js` を生成した時点のフォントファイルに基づきます。
 - 収録判定は `font-coverage-data.js` に記録された解析フェイスを基準にします。太さを変更すると実際の表示で別ファイル・別フェイスが使われる可能性があり、その収録内容が解析フェイスと完全に同じであることは保証しません。
-- カードに表示するファイル名、内部フェイス名、バージョンで、収録判定の解析基準を確認できます。
+- カードでは文字収録判定の解析元・バージョン・解析方法を確認できます。内部フェイス名とfaceIndexはTTC/OTCだけに表示し、通常のTTF/OTF/WOFF2では表示しません。未解析には推測した値を表示しません。
 - 閲覧者のOSにある同名フォントは、解析時とバージョンや収録内容が異なる場合があります。
 - ブラウザが実際に選んだフォールバックフォントまでは特定しません。
 - `document.fonts.check()` や文字幅比較だけで収録有無を断定しません。
@@ -45,7 +45,7 @@
 - OpenType機能はカード内のトグルではなく、全フォントで再利用する共通ダイアログに表示します。機能のオン・オフは今回の対象外です。
 - 解析対象ファイルのGSUB／GPOS FeatureListで確認できたタグだけを掲載します。表示されないタグを「未収録」と断定せず、未解析と解析済み0件も区別します。
 - OpenType Registered Featuresまたはフォント公式資料で意味を確認できたタグだけを説明付きチップにします。意味を確認できない独自タグや「説明未確認」は表示しません。
-- Noto Sans JPは、画面が読み込むGoogle Fonts CSS API（ウェイト400／700）に定義された全WOFF2を解析し、重複URLを1回だけ取得したうえで機能タグの和集合を表示します。
+- Noto Sans JPは、画面が読み込むGoogle Fonts CSS API（ウェイト400／700）に定義された全WOFF2を解析し、重複URLを1回だけ取得したうえで、cmapと機能タグをそれぞれ和集合として表示します。
 - Google Fontsはunicode-rangeごとのサブセット配信です。ブラウザが実際に取得するファイルは表示文字やブラウザ環境によって異なる場合があります。
 
 ## Noto Sans JP OpenTypeデータの再生成
@@ -57,7 +57,13 @@ python -m pip install -r requirements-font-analysis.txt
 python analyze_google_fonts.py
 ```
 
-`analyze_google_fonts.py` は固定User-Agentで `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap` を取得し、すべての `@font-face`、ウェイト、unicode-range、WOFF2 URLを解析します。各ファイルのSHA-256とGSUB／GPOSタグ、統合タグ、CSS取得日、取得ホストを `font-opentype-data.js` に記録します。全ファイルの取得・解析が成功した場合だけ出力を更新し、フォントファイル自体はメモリ上だけで処理します。
+`analyze_google_fonts.py` は固定User-Agentで `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap` を取得し、すべての `@font-face`、ウェイト、unicode-range、WOFF2 URLを解析します。各ファイルのSHA-256、cmap、GSUB／GPOSタグ、統合タグ、CSS取得日、取得ホストを `font-coverage-data.js` と `font-opentype-data.js` に記録します。全ファイルの取得・解析が成功した場合だけ両方の出力を更新し、フォントファイル自体はメモリ上だけで処理します。Notoのcmapは全WOFF2の統合結果であり、1回の閲覧でブラウザが全ファイルを取得するという意味ではありません。
+
+## CIと手動ライブ解析
+
+`CI` はPR、mainへのpush、手動実行でNode 22とPython 3.12の構文検査、Nodeテスト、ネットワークを使わないPythonフィクスチャテスト、差分空白検査を実施します。
+
+実際のGoogle Fontsを再解析する場合は、GitHub Actionsの **Live Google Fonts analysis** を手動実行し、`run_live_analysis` を有効にします。URL、実行日、User-Agent、ファイル数、版、機能数と生成データの差分をアーティファクトで取得します。このワークフローは読み取り専用で、コミット、プッシュ、フォントバイナリの保存を行いません。
 
 通常はPython標準HTTPSクライアントを使用します。ローカルの証明書構成でTLS検証に失敗し、検証済みの `curl` が利用できる環境では、同じUser-Agentを指定して `curl` へフォールバックします。証明書検証は無効化しません。
 

@@ -146,6 +146,17 @@ test('ダイアログは指定された情報順とGoogle Fontsの注意書き�
   assert.match(app, /CSS取得日/);
   assert.match(app, /User-Agent/);
   assert.match(app, /確認できたOpenType機能数/);
+  assert.match(app, /フォントバージョン/);
+  assert.match(app, /meta\.caveat/);
+});
+
+test('cmap収録情報とOpenType情報を分離し、内部フェイスの未確認表示をしない', () => {
+  assert.doesNotMatch(app, /解析フォント:/);
+  assert.doesNotMatch(app, /内部フェイス未確認/);
+  assert.match(app, /文字収録判定の解析元/);
+  assert.match(app, /webCoverageAnalysisRows/);
+  assert.match(app, /shouldDisplayInternalFace/);
+  assert.match(html, /font-metadata\.js[\s\S]*app\.js/);
 });
 
 test('OpenType機能辞書は公式Registered Featuresページだけを参照する', () => {
