@@ -10,6 +10,12 @@
       integrity="sha384-vlBdW0r3AcZO/HboRPznQNowvexd3fY8qHOWkBi5q7KGgqJ+F48+DceybYmrVbmB"
       crossorigin="anonymous"
     />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap"
+    />
     <link rel="stylesheet" href="style.css" />
   </head>
   <body>
@@ -127,10 +133,37 @@
 
     <div id="copyToast" class="copy-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
+    <dialog id="openTypeFeatureDialog" class="open-type-dialog" aria-labelledby="openTypeFeatureDialogTitle">
+      <div class="open-type-dialog-header">
+        <h3 id="openTypeFeatureDialogTitle"></h3>
+        <button id="openTypeFeatureDialogClose" type="button" class="open-type-dialog-close" aria-label="OpenType機能ダイアログを閉じる">×</button>
+      </div>
+      <div class="open-type-dialog-body">
+        <ul id="openTypeFeatureDialogMeta" class="open-type-dialog-meta"></ul>
+        <ul id="openTypeFeatureDialogFiles" class="open-type-dialog-files"></ul>
+        <ul id="openTypeFeatureDialogSummary" class="open-type-dialog-summary"></ul>
+        <div class="open-type-feature-list-box">
+          <p class="open-type-feature-list-label">掲載対象のOpenType機能</p>
+          <div id="openTypeFeatureDialogFeatureList" class="open-type-feature-chips" aria-label="OpenType機能"></div>
+        </div>
+        <div
+          id="openTypeFeatureDialogFeatureDetail"
+          class="open-type-feature-detail"
+          role="region"
+          aria-live="polite"
+        ></div>
+        <p id="openTypeFeatureDialogDisclaimer" class="open-type-dialog-note"></p>
+        <p id="openTypeFeatureDialogOfficial" class="open-type-dialog-official"></p>
+      </div>
+    </dialog>
+
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.17.0/dist/katex.min.js" integrity="sha384-AtrdNsnxl/75rvBneBVH7DtOvCxSVahR2zWqle1coBKd8DEmLoviqNeJSx64gNAs" crossorigin="anonymous"></script>
     <script defer src="integration-utils.js"></script>
     <script defer src="font-coverage-data.js"></script>
+    <script defer src="font-opentype-data.js"></script>
     <script defer src="font-coverage.js"></script>
+    <script defer src="opentype-dialog.js"></script>
+    <script defer src="font-metadata.js"></script>
     <script defer src="app.js"></script>
     <script defer src="katex-data.js"></script>
     <script defer src="katex-page.js"></script>

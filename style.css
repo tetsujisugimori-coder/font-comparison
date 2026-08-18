@@ -518,6 +518,191 @@ select {
 .attribute-list li {
   font-size: 0.9rem;
   color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.opentype-feature-block {
+  position: relative;
+}
+
+.open-type-feature-button {
+  width: 100%;
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 7px 12px;
+  background: var(--control-bg);
+  color: var(--text);
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  text-align: left;
+}
+
+.open-type-feature-button:focus-visible {
+  outline: 3px solid rgba(76, 110, 245, 0.32);
+  outline-offset: 2px;
+}
+
+.open-type-feature-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.open-type-dialog {
+  width: min(860px, calc(100% - 30px));
+  max-height: min(86vh, 760px);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 0;
+  background: var(--panel);
+  color: var(--text);
+  box-shadow: var(--shadow);
+}
+
+.open-type-dialog::backdrop {
+  background: rgba(12, 15, 24, 0.55);
+}
+
+.open-type-dialog-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: linear-gradient(180deg, var(--panel), color-mix(in srgb, var(--panel), transparent 8%));
+  border-bottom: 1px solid var(--border);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.open-type-dialog-header h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.open-type-dialog-close {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  width: 30px;
+  height: 30px;
+  line-height: 1;
+  background: var(--control-bg);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.open-type-dialog-body {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px 16px;
+}
+
+.open-type-dialog-meta,
+.open-type-dialog-files,
+.open-type-dialog-summary {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.open-type-dialog-summary li,
+.open-type-dialog-files li {
+  margin: 0;
+  color: var(--text);
+  overflow-wrap: anywhere;
+}
+
+.open-type-dialog-meta li {
+  color: var(--muted);
+  margin: 0;
+  word-break: break-word;
+}
+
+.open-type-dialog-note {
+  margin: 0;
+  font-size: 0.84rem;
+  color: var(--muted);
+  line-height: 1.6;
+  border-top: 1px dashed var(--border);
+  padding-top: 10px;
+}
+
+.open-type-dialog-official {
+  margin: 0;
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
+}
+
+.open-type-feature-list-box {
+  display: grid;
+  gap: 10px;
+}
+
+.open-type-feature-list-label {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin: 0;
+}
+
+.open-type-feature-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  overflow: auto;
+  max-height: 210px;
+  padding-right: 2px;
+}
+
+.open-type-feature-chip {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.76rem;
+  font-family: Consolas, "Cascadia Code", monospace;
+  cursor: pointer;
+}
+
+.open-type-feature-chip:hover,
+.open-type-feature-chip:focus-visible {
+  background: var(--control-bg);
+}
+
+.open-type-feature-chip.is-selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent), transparent 80%);
+  background: var(--accent-soft);
+}
+
+.open-type-feature-detail {
+  border: 1px solid var(--soft-border);
+  border-radius: 10px;
+  background: var(--panel);
+  padding: 10px 12px;
+  min-height: 76px;
+}
+
+.open-type-feature-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+}
+
+.open-type-feature-detail p {
+  margin: 0 0 6px;
+  font-size: 0.84rem;
+  line-height: 1.7;
+}
+
+.open-type-feature-detail p:last-child {
+  margin-bottom: 0;
 }
 
 .notes {
@@ -934,6 +1119,20 @@ select {
 }
 
 @media (max-width: 699px) {
+  .open-type-dialog {
+    width: calc(100% - 20px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .open-type-dialog-body {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .open-type-feature-chips {
+    max-height: 180px;
+  }
+
   .app-header,
   .app-shell,
   .memo-integration-panel {
@@ -984,6 +1183,14 @@ select {
 
   .math-result .katex {
     font-size: 1.12em;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .open-type-dialog,
+  .open-type-feature-chip,
+  .open-type-feature-detail {
+    transition: none;
   }
 }
 

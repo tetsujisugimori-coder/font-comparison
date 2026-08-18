@@ -84,3 +84,99 @@ test('連携UIは狭幅とOSダークモードへ対応する', () => {
   assert.match(css, /@media \(max-width: 699px\)[\s\S]*?\.memo-integration-panel/);
   assert.match(css, /\.recommendation-badge\.recommended/);
 });
+
+test('OpenType機能はカードの展開トグルではなく共通ダイアログへ変更されている', () => {
+  assert.doesNotMatch(app, /openTypeFeaturePanels/);
+  assert.doesNotMatch(app, /open-type-toggle/);
+  assert.match(app, /openTypeFeatureDialog/);
+  assert.match(app, /openTypeFeatureDialogForFont/);
+  assert.match(app, /openTypeFeatureRows\(font\)/);
+  assert.match(app, /aria-controls="openTypeFeatureDialog"/);
+  assert.match(app, /OpenType機能の詳細/);
+});
+
+test('OpenType機能は共通辞書で公開され、未確認タグは掲載しない', () => {
+  assert.match(app, /openTypeFeatureDefinitions/);
+  assert.match(app, /任意/);
+  assert.match(app, /自動/);
+  assert.match(app, /フォント固有/);
+  assert.doesNotMatch(app, /説明未確認/);
+  assert.doesNotMatch(app, /未確認のみを/);
+  assert.match(app, /openTypeUnparsedMessage =/);
+  assert.match(app, /openTypeNoFeatureMessage =/);
+});
+
+test('Webフォントも同じカード構造でOpenType情報を扱う', () => {
+  assert.match(app, /'noto-sans-jp-web'/);
+  assert.match(app, /sourceType: 'web'/);
+  assert.match(app, /fontOrigin: 'Webブラウザ'/);
+  assert.match(app, /sourceType: 'system'/);
+  assert.match(app, /font\.attributes\.sourceKind/);
+  assert.match(html, /fonts\.googleapis\.com/);
+});
+
+test('OpenType機能ダイアログにはボタン、一覧、説明欄の要素があり、同一ダイアログを再利用する', () => {
+  assert.match(html, /id="openTypeFeatureDialog"/);
+  assert.match(html, /openTypeFeatureDialogSummary/);
+  assert.match(html, /openTypeFeatureDialogMeta/);
+  assert.match(html, /openTypeFeatureDialogFeatureList/);
+  assert.match(html, /openTypeFeatureDialogFeatureDetail/);
+  assert.match(app, /openTypeFeatureDialogForFont\(font, openTypeButton\)/);
+  assert.match(html, /opentype-dialog\.js[\s\S]*app\.js/);
+  assert.match(app, /OpenTypeDialog\.createController/);
+  assert.match(app, /aria-pressed="false"/);
+  assert.doesNotMatch(app, /role="option"/);
+  assert.doesNotMatch(app, /role', 'listbox/);
+  assert.match(css, /\.open-type-feature-button/);
+  assert.match(css, /\.open-type-dialog/);
+});
+
+test('ダイアログは指定された情報順とGoogle Fontsの注意書きを持つ', () => {
+  const metaPosition = html.indexOf('openTypeFeatureDialogMeta');
+  const filesPosition = html.indexOf('openTypeFeatureDialogFiles');
+  const summaryPosition = html.indexOf('openTypeFeatureDialogSummary');
+  const listPosition = html.indexOf('openTypeFeatureDialogFeatureList');
+  const detailPosition = html.indexOf('openTypeFeatureDialogFeatureDetail');
+  const notePosition = html.indexOf('openTypeFeatureDialogDisclaimer');
+  const officialPosition = html.indexOf('openTypeFeatureDialogOfficial');
+  assert.ok(metaPosition < filesPosition && filesPosition < summaryPosition);
+  assert.ok(summaryPosition < listPosition && listPosition < detailPosition);
+  assert.ok(detailPosition < notePosition && notePosition < officialPosition);
+  assert.match(app, /Google FontsのCSSに定義された複数の配信ファイルを解析し/);
+  assert.match(app, /CSS取得日/);
+  assert.match(app, /User-Agent/);
+  assert.match(app, /確認できたOpenType機能数/);
+  assert.match(app, /フォントバージョン/);
+  assert.match(app, /meta\.caveat/);
+});
+
+test('cmap収録情報とOpenType情報を分離し、内部フェイスの未確認表示をしない', () => {
+  assert.doesNotMatch(app, /解析フォント:/);
+  assert.doesNotMatch(app, /内部フェイス未確認/);
+  assert.match(app, /文字収録判定の解析元/);
+  assert.match(app, /webCoverageAnalysisRows/);
+  assert.match(app, /shouldDisplayInternalFace/);
+  assert.match(html, /font-metadata\.js[\s\S]*app\.js/);
+});
+
+test('OpenType機能辞書は公式Registered Featuresページだけを参照する', () => {
+  for (const page of ['features_ae', 'features_fj', 'features_ko', 'features_pt', 'features_uz']) {
+    assert.match(app, new RegExp(page));
+  }
+  assert.doesNotMatch(app, /features_(?:[0-9]+|zh)(?:['"/])/);
+  assert.doesNotMatch(app, /unicode\.org\/standard\/reports\/tr11/);
+  for (const officialName of [
+    'Alternative Fractions',
+    'Small Capitals From Capitals',
+    'Contextual Alternates',
+    'Case-Sensitive Forms',
+    'Glyph Composition / Decomposition',
+    'Capital Spacing',
+    'Required Contextual Alternates',
+    'Required Ligatures',
+    'Alternate Vertical Half Metrics'
+  ]) {
+    assert.match(app, new RegExp(officialName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  assert.doesNotMatch(app, /変え内容/);
+});

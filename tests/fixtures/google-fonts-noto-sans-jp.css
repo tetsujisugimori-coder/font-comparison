@@ -1,0 +1,24 @@
+/* subset-a */
+@font-face {
+  font-family: 'Noto Sans JP';
+  font-style: normal;
+  font-weight: 400;
+  src: url(https://fonts.gstatic.com/example/shared.woff2) format('woff2');
+  unicode-range: U+3041-3096;
+}
+/* subset-a, same URL for another weight */
+@font-face {
+  font-family: 'Noto Sans JP';
+  font-style: normal;
+  font-weight: 700;
+  src: url(https://fonts.gstatic.com/example/shared.woff2) format('woff2');
+  unicode-range: U+3041-3096;
+}
+/* subset-b */
+@font-face {
+  font-family: 'Noto Sans JP';
+  font-style: normal;
+  font-weight: 700;
+  src: url(https://fonts.gstatic.com/example/bold-only.woff2) format('woff2');
+  unicode-range: U+0000-00FF;
+}

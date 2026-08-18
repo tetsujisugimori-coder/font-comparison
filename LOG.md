@@ -1,3 +1,12 @@
+## 2026-08-18 PR #7: cmap/ OpenType情報分離とCI追加
+
+- 原因: カードの「解析フォント」は `font-coverage-data.js` のcmap解析結果をOpenType解析結果のように混在表示していた。
+- 対応: 文字収録判定の解析元・版・解析方法をcmap情報として独立表示し、OpenType機能はダイアログでGSUB/GPOS情報として表示するよう分離した。
+- Noto Sans JPはGoogle Fonts CSSの124 WOFF2を解析し、cmapを統合した。2026-08-18の結果は16,657コードポイント、`Version 2.004-H2;hotconv 1.0.118;makeotfexe 2.5.65603`、OpenType機能11件（`ccmp`、`halt`、`kern`、`liga`、`locl`、`palt`、`vert`、`vhal`、`vkrn`、`vpal`、`vrt2`）。
+- 通常のTTF/OTF/WOFF2では内部フェイスを表示せず、TTC/OTCだけにfaceIndex付きで表示する。未解析には推測値を出さない。
+- `.github/workflows/ci.yml` にフィクスチャ専用CIを、`.github/workflows/live-google-fonts-analysis.yml` に手動の実解析・アーティファクト出力を追加した。いずれも読み取り専用権限で、自動コミット・フォントバイナリ保存はしない。
+- Nodeテスト、Pythonフィクスチャテスト、構文検査、実Google Fonts解析、差分空白検査を実施する。ブラウザのPC/モバイル、ライト/ダーク、キーボード操作確認はこの後に実施する。
+
 ## 2026-08-18 cmap収録文字調査と未収録文字表示
 
 ### 目的
@@ -83,6 +92,56 @@ Microsoft製品付属7フォントは「Microsoft製品付属（再配布は別�
 - 閲覧環境の同名フォントが解析版と同一バージョンかはブラウザから確認しない。
 - cmapはコードポイントの有無であり、字形品質、言語全体、結合・異体字シーケンス、OpenType機能の完全対応を保証しない。
 - フォールバック先の具体的なフォント名は特定しない。
+
+## 2026-08-18 OpenType機能情報のダイアログ化
+
+### Google Fonts版Noto Sans JPの追加解析
+
+- 取得元CSS: `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap`
+- CSS取得日: `2026-08-18`
+- User-Agent: `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36`
+- CSS配信元／WOFF2配信元: `fonts.googleapis.com`／`fonts.gstatic.com`
+- 指定ウェイト: 400／700。CSSの `@font-face` は各124件、計248件。
+- 同一URLが400と700で共有されていたため、重複排除後の解析対象は124 WOFF2。各ウェイトは124ファイルに対応する。
+- 124ファイルすべてについてSHA-256、unicode-range、ウェイト、GSUB／GPOS FeatureListを記録し、ファイルごとの結果から和集合を生成した。フォントファイル自体は保存・コミットしていない。
+- 統合タグ（11件）: `ccmp`, `halt`, `kern`, `liga`, `locl`, `palt`, `vert`, `vhal`, `vkrn`, `vpal`, `vrt2`。
+- GSUBで確認: 5タグ。GPOSで確認: 7タグ。`vert` は両テーブルに存在するため重複表示せず `GSUB / GPOS` として保持した。
+- 注意: CSSに定義された全配信ファイルの解析結果であり、1回の閲覧でブラウザが全124ファイルを取得するという意味ではない。実際の取得ファイルは表示文字とブラウザ環境に依存する。
+- 更新コマンド: `python -m pip install -r requirements-font-analysis.txt` 後に `python analyze_google_fonts.py`。
+
+### 辞書・UI・テストの修正
+
+- 掲載タグの名称・説明・分類・URLをOpenType 1.9.1 Registered Featuresの `features_ae`／`features_fj`／`features_ko`／`features_pt`／`features_uz` に合わせて更新した。
+- 未確認の独自タグはチップ化せず、スタイルセットはフォント固有の変化を推測しない共通説明にした。
+- `listbox`／`option`を廃止し、各チップを `button` と `aria-pressed` で表現した。Tab、Enter／Space、Escape、閉じるボタン、起点ボタンへのフォーカス復帰を実装した。
+- CSS解析、ウェイト・unicode-range、URL重複排除、複数ファイル統合、GSUB／GPOS併存、失敗処理をPython fixtureで検証する。ダイアログの選択、`aria-pressed`、終了、フォーカス復帰はDOM動作を模したNodeテストで検証する。
+
+### 変更内容
+
+- `app.js`
+  - OpenType機能の共通定義を追加（タグ/名称/説明）し、`font-opentype-data.js` を元に各フォントの `attributes.openType` を整備。
+  - 各フォントカードの要約として `OpenType機能` を追加し、収録確認済み/未確認を区別して表示。
+  - カード内の折りたたみトグルを廃止し、ボタンから共通ダイアログを開く構成へ変更。
+  - ダイアログ内で要約、メタ情報、機能一覧、選択機能を表示し、未確認フォントは断定的な未収録表示をしない。
+  - Webフォント `noto-sans-jp-web` を `sourceType: 'web'` として同一ロジックで表示。
+- `style.css`
+  - 共通ダイアログ、ボタン、チップ、説明欄のスタイルを追加。
+  - スマートフォン幅でも崩れにくいレイアウトへ調整。
+- `index.html`
+  - 共通OpenTypeダイアログ要素を追加し、Google Fonts読み込み方針は既存仕様を維持。
+- `README.md`
+  - OpenType機能の表示方法をカード折りたたみから共通ダイアログへ更新。
+
+### 実装上の判断
+
+- `openType` 情報が未検証のフォントは `OpenType機能は未確認です。収録状況を確認できていません。` と表示し、未確認を未収録として断定しない。
+- 展開内容はタグ名・機能名・説明を共通説明辞書で表示し、フォントごとの重複記述を抑制。
+- 未確認データがあるフォントもダイアログで理由を表示し、空欄表示を避けた。
+
+### 影響
+
+- システムフォント・Webフォントのどちらにも `OpenType機能` セクションを同一UIで表示可能にした。
+- 既存の4表示モード、Memo Nexus連携、文字判定・XSS対策、凡例運用は維持。
 
 ## 2026-07-15 KaTeX 数式フォント専用ビュー追加
 
@@ -235,3 +294,10 @@ Microsoft製品付属7フォントは「Microsoft製品付属（再配布は別�
 - 凡例を「別のフォントで代替表示されています」から「ブラウザが別のフォントによる代替表示を試みます」へ変更し、代替表示の成功を断定しない表現にした。
 - Microsoft LearnのMS Mincho公式情報（`Fixed pitch: True`）に合わせ、このアプリで登録・解析するMS Minchoの文字幅を「等幅」へ修正した。MS PMinchoは別フェイスのプロポーショナル書体として区別する。
 - `font-coverage-data.js`は再生成していない。
+
+## 2026-08-18 PR #7: CI差分検査と生成ファイル更新の整合性
+
+- `git diff --check` はクリーンなActions作業ツリーでは未コミット差分しか確認しないため、`scripts/check-diff-whitespace.mjs` を追加した。PRではbase...head、pushではbefore..currentを検査し、空または取得不能な比較元では現在HEADの `git show --check` を必ず実行する。
+- Google Fontsの2つの生成JSは、両方を一時生成・再読込検証してから置換するよう変更した。2つ目の置換が失敗した場合は、1つ目をバックアップから復元する。成功・失敗のどちらでも一時ファイルとバックアップを削除する。
+- Pythonテストに一時ファイル作成失敗、不正な一時データ、2つ目の置換失敗とロールバック、generatedAt整合性を追加した。NodeテストにPR/push/workflow_dispatchの検査範囲、無効比較元の代替処理、空白エラーの検出を追加した。
+- 通常CIは成功した。手動Live Google Fonts analysisはワークフロー定義がデフォルトブランチに未配置のため、PRブランチからは起動できないことを確認した。

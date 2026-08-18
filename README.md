@@ -9,6 +9,7 @@
 - 通常、固定マス、実幅枠、詳細の4表示モード
 - 日本語、英語、繁体字、簡体字、判別、記号、コードの見本
 - cmap解析で未収録と確認できた文字の薄い表示
+- OpenType機能情報を「OpenType機能」として、カードごとに共通ダイアログで確認
 - KaTeX数式フォント専用ビュー（51用例）
 - PC、狭幅、スマートフォン、OSダークモード対応
 - Memo Nexusから比較文章を受け取り、検証済みURLへ選択結果を返す連携モード
@@ -31,7 +32,7 @@
 
 - 収録判定は `font-coverage-data.js` を生成した時点のフォントファイルに基づきます。
 - 収録判定は `font-coverage-data.js` に記録された解析フェイスを基準にします。太さを変更すると実際の表示で別ファイル・別フェイスが使われる可能性があり、その収録内容が解析フェイスと完全に同じであることは保証しません。
-- カードに表示するファイル名、内部フェイス名、バージョンで、収録判定の解析基準を確認できます。
+- カードでは文字収録判定の解析元・バージョン・解析方法を確認できます。内部フェイス名とfaceIndexはTTC/OTCだけに表示し、通常のTTF/OTF/WOFF2では表示しません。未解析には推測した値を表示しません。
 - 閲覧者のOSにある同名フォントは、解析時とバージョンや収録内容が異なる場合があります。
 - ブラウザが実際に選んだフォールバックフォントまでは特定しません。
 - `document.fonts.check()` や文字幅比較だけで収録有無を断定しません。
@@ -39,9 +40,38 @@
 - Cascadia Codeは解析環境にファイルがなかったため、現在のデータでは `unknown` です。自動ダウンロードは行いません。
 - このアプリで登録・解析するMS Minchoは等幅です。MS PMinchoは別フェイスのプロポーショナル書体であり、混同しません。
 
+## OpenType機能表示
+
+- OpenType機能はカード内のトグルではなく、全フォントで再利用する共通ダイアログに表示します。機能のオン・オフは今回の対象外です。
+- 解析対象ファイルのGSUB／GPOS FeatureListで確認できたタグだけを掲載します。表示されないタグを「未収録」と断定せず、未解析と解析済み0件も区別します。
+- OpenType Registered Featuresまたはフォント公式資料で意味を確認できたタグだけを説明付きチップにします。意味を確認できない独自タグや「説明未確認」は表示しません。
+- Noto Sans JPは、画面が読み込むGoogle Fonts CSS API（ウェイト400／700）に定義された全WOFF2を解析し、重複URLを1回だけ取得したうえで、cmapと機能タグをそれぞれ和集合として表示します。
+- Google Fontsはunicode-rangeごとのサブセット配信です。ブラウザが実際に取得するファイルは表示文字やブラウザ環境によって異なる場合があります。
+
+## Noto Sans JP OpenTypeデータの再生成
+
+Python 3、fontTools、Brotli拡張が必要です。依存関係は専用ファイルから導入できます。
+
+```powershell
+python -m pip install -r requirements-font-analysis.txt
+python analyze_google_fonts.py
+```
+
+`analyze_google_fonts.py` は固定User-Agentで `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap` を取得し、すべての `@font-face`、ウェイト、unicode-range、WOFF2 URLを解析します。各ファイルのSHA-256、cmap、GSUB／GPOSタグ、統合タグ、CSS取得日、取得ホストを `font-coverage-data.js` と `font-opentype-data.js` に記録します。全ファイルの取得・解析が成功した場合だけ両方の出力を更新し、フォントファイル自体はメモリ上だけで処理します。Notoのcmapは全WOFF2の統合結果であり、1回の閲覧でブラウザが全ファイルを取得するという意味ではありません。
+
+2つの生成JSは、更新後の内容を両方とも一時ファイルへ作成して再読込検証した後に置換します。置換途中で失敗した場合は、すでに置換した側を元の内容へロールバックし、一時ファイルとバックアップを後始末します。
+
+## CIと手動ライブ解析
+
+`CI` はPR、mainへのpush、手動実行でNode 22とPython 3.12の構文検査、Nodeテスト、ネットワークを使わないPythonフィクスチャテスト、PRまたはコミット範囲の空白検査を実施します。引数なしの作業ツリー差分検査は使いません。PRではbase SHAからhead SHA、pushではbefore SHAからcurrent SHA、比較元を使えない手動実行では現在HEADを検査します。
+
+実際のGoogle Fontsを再解析する場合は、GitHub Actionsの **Live Google Fonts analysis** を手動実行し、`run_live_analysis` を有効にします。URL、実行日、User-Agent、ファイル数、版、機能数と生成データの差分をアーティファクトで取得します。このワークフローは読み取り専用で、コミット、プッシュ、フォントバイナリの保存を行いません。
+
+通常はPython標準HTTPSクライアントを使用します。ローカルの証明書構成でTLS検証に失敗し、検証済みの `curl` が利用できる環境では、同じUser-Agentを指定して `curl` へフォールバックします。証明書検証は無効化しません。
+
 ## cmapデータの再生成
 
-Python 3と[fontTools](https://fonttools.readthedocs.io/)が必要です。
+Python 3と[fontTools](https://fonttools.readthedocs.io/)が必要です。OpenType用WOFF2も更新する場合は上記のBrotli依存関係も導入してください。
 
 ```powershell
 python -m pip install fonttools
@@ -69,7 +99,10 @@ python analyze_font_cmap.py `
 - `app.js`: フォント情報、カード、4表示モード、Memo Nexus連携UI
 - `font-coverage.js`: 3状態判定、範囲の二分探索、安全な書記素クラスタ単位DOM描画
 - `font-coverage-data.js`: 生成済みcmap範囲データ
+- `font-opentype-data.js`: 生成済みGSUB／GPOS機能データ（Noto Sans JPは配信ファイルごとの根拠を含む）
 - `analyze_font_cmap.py`: TTF／OTF／TTC解析・データ生成CLI
+- `analyze_google_fonts.py`: Google Fonts CSS／WOFF2取得・OpenTypeデータ更新CLI
+- `opentype-dialog.js`: ダイアログの選択、終了、フォーカス復帰処理
 - `integration-utils.js`: Memo Nexusパラメータと戻りURLの検証
 - `katex-data.js` / `katex-page.js`: KaTeX専用ビュー
 - `*.test.js`: Node.js自動テスト
@@ -89,8 +122,10 @@ python -m http.server 4173 --bind 127.0.0.1
 ```powershell
 node --check app.js
 node --check font-coverage.js
+node --check opentype-dialog.js
 node --test *.test.js
-python -m py_compile analyze_font_cmap.py
+python -m py_compile analyze_font_cmap.py analyze_google_fonts.py
+python -m unittest test_analyze_google_fonts.py
 ```
 
 テストでは3状態、二分探索、サロゲートペア、空白・改行・タブ、未収録クラス、文字順、XSS防止、全表示モード、初期3カード、Memo Nexus連携を確認します。
@@ -111,14 +146,17 @@ python -m py_compile analyze_font_cmap.py
 
 ## 公式情報とライセンス
 
-カードの文字体系情報は、各[Microsoft Typography font list](https://learn.microsoft.com/en-us/typography/font-list/)と[Cascadia Code公式リポジトリ](https://github.com/microsoft/cascadia-code)を基準にしています。
+カードの文字体系情報は、各[Microsoft Typography font list](https://learn.microsoft.com/en-us/typography/font-list/)と[Cascadia Code公式リポジトリ](https://github.com/microsoft/cascadia-code)、[Google Fonts Noto Sans JP](https://fonts.google.com/noto/specimen/Noto+Sans+JP)を基準にしています。
 
 Microsoft製品に付属するフォントは「Microsoft製品付属（再配布は別途ライセンス確認）」と表示します。製品への収録だけを根拠に「フリー」や「商用利用自由」とは扱いません。Cascadia Codeは公式[LICENSE](https://github.com/microsoft/cascadia-code/blob/main/LICENSE)で確認できる `SIL Open Font License 1.1` を表示します。
+
+- Noto Sans JP は [Google Fonts](https://fonts.google.com/noto/specimen/Noto+Sans+JP)経由のWebフォントとして利用しており、ライセンスは `SIL Open Font License 1.1` です。取得元の記載は `font` 定義と公式情報欄に反映しています。
 
 ## 既知の制約
 
 - 静的cmapは解析した1バージョン・1フェイスの情報で、閲覧環境との差異を自動検出しません。
 - cmapにコードポイントがあっても、字形品質、OpenType機能、異体字シーケンス、言語全体の完全対応までは保証しません。
-- 結合文字や異体字セレクタも削除せずコードポイント単位で保持しますが、書記素クラスタ全体の描画成否は判定しません。
+- 結合文字や異体字セレクタ、ZWJ絵文字は `Intl.Segmenter`（非対応時は保守的フォールバック）で書記素クラスタ単位で扱い、文字列を1文字に分断しません。
+- OpenType機能は解析ファイルで確認できたものだけを掲載します。未解析を未収録と断定せず、未収録機能の推測一覧も作りません。
 - CSSフォールバック先と、画面上で最終的に使われたフォント名は特定しません。
 - フォントのライセンスを自動判定しません。
