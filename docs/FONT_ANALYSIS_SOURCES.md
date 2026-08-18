@@ -2,19 +2,21 @@
 
 ## 現在の解析・確認状況
 
-表示利用元と解析元は異なる場合があります。件数は、記載した解析日時点の静的データで確認できる値です。
+表示利用元と解析元は異なる場合があります。件数は、記載した解析日時点の静的データで確認できる値です。カード見出しはフォントファミリー名であり、WeightとStyleはそのファミリー内の個別フェイス情報です。CSS指定内のカンマ区切りはフォールバック候補であり、Font Familyや個別フェイスの一覧ではありません。
 
-| 表示名 | 種別 | 表示利用元またはCSS指定 | cmap解析状況 | OpenType解析状況 | 解析元ファイルまたはCSS URL | 内部フェイス名 | バージョン | 解析日 | 備考・未確認理由 |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| Segoe UI | システムフォント | Windows標準、`"Segoe UI"` | 確認済み（3,996コードポイント） | 確認済み（30機能） | `segoeui.ttf` | 該当なし | Version 5.71 | 2026-08-18T07:13:11+09:00 | Windows環境の単体TTFを解析。 |
-| Yu Gothic UI | システムフォント | Windows標準、`"Yu Gothic UI"` | 確認済み（16,538コードポイント） | 確認済み（33機能） | `YuGothM.ttc` | Yu Gothic UI Regular（faceIndex 1） | Version 1.95 | 2026-08-18T07:13:11+09:00 | Windows環境のTTCを解析。 |
-| Meiryo | システムフォント | Windows標準、`Meiryo` | 確認済み（17,189コードポイント） | 確認済み（29機能） | `meiryo.ttc` | Meiryo（faceIndex 0） | Version 6.51 | 2026-08-18T07:13:11+09:00 | Windows環境のTTCを解析。 |
-| MS Mincho | システムフォント | Windows標準、`"ＭＳ 明朝", "MS Mincho", serif` | 確認済み（16,134コードポイント） | 確認済み（4機能） | `msmincho.ttc` | MS Mincho（faceIndex 0） | Version 5.32 | 2026-08-18T07:13:11+09:00 | Windows環境のTTCを解析。 |
-| Consolas | システムフォント | Windows標準、`Consolas` | 確認済み（2,489コードポイント） | 確認済み（24機能） | `consola.ttf` | 該当なし | Version 7.01 | 2026-08-18T07:13:11+09:00 | Windows環境の単体TTFを解析。 |
-| Cascadia Code | システムフォント | `"Cascadia Code"`、インストール済みか要確認 | 未確認 | 未確認 | 未確認 | 該当なし | 未確認 | 2026-08-18T07:13:11+09:00 | フォントファイルが見つからないため解析できていない。 |
-| Courier New | システムフォント | Windows標準、`"Courier New"` | 確認済み（3,180コードポイント） | 確認済み（14機能） | `cour.ttf` | 該当なし | Version 6.95 | 2026-08-18T07:13:11+09:00 | Windows環境の単体TTFを解析。 |
-| Times New Roman | システムフォント | Windows標準、`"Times New Roman"` | 確認済み（3,678コードポイント） | 確認済み（25機能） | `times.ttf` | 該当なし | Version 7.12 | 2026-08-18T07:13:11+09:00 | Windows環境の単体TTFを解析。 |
-| Noto Sans JP | Webフォント | Google Fonts CSS API、`"Noto Sans JP", sans-serif` | 確認済み（16,657コードポイント、124ファイルの`cmap`統合） | 確認済み（11機能） | `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap` | 該当なし | Version 2.004-H2;hotconv 1.0.118;makeotfexe 2.5.65603 | 2026-08-18 | Google Fonts配信WOFF2を、指定UA・ウェイト400/700で解析した現時点の一例。CSSは248件の`@font-face`、配信内容は将来変化し得る。 |
+WindowsシステムフォントのWeight・Styleは、`font-face-data.js`に記録されたこの検証環境の`C:\Windows\Fonts`を2026-08-18T13:06:05+09:00に解析した結果だけを根拠にします。WeightはOS/2の`usWeightClass`、Styleは専用Italicを示す`fsSelection`で確認しました。他OS、別Windowsバージョン、別フォント版に同じWeight・Styleがあることは保証しません。
+
+| 表示名 | カードのFont Family | 種別 | 表示利用元またはCSS指定 | Weight確認状況 | Style確認状況 | 確認範囲または根拠 | cmap解析状況 | OpenType解析状況 | 解析元ファイルまたはCSS URL | 内部フェイス名 | バージョン | 解析日 | 備考・未確認理由 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Segoe UI | Segoe UI | システムフォント | Windows標準、`"Segoe UI"` | 確認済み: 300 / 350 / 400 / 600 / 700 / 900 | 確認済み: Normal / Italic | Windows検証環境、`C:\Windows\Fonts`、`usWeightClass` / `fsSelection` | 確認済み（3,996コードポイント） | 確認済み（30機能） | `segoeui.ttf` | 該当なし | Version 5.71 | 2026-08-18T07:13:11+09:00 | Weight・Styleは単体TTF群を確認。 |
+| Yu Gothic UI | Yu Gothic UI | システムフォント | Windows標準、`"Yu Gothic UI"` | 確認済み: 300 / 350 / 400 / 600 / 700 | 確認済み: Normal | Windows検証環境、`C:\Windows\Fonts`、`usWeightClass` / `fsSelection` | 確認済み（16,538コードポイント） | 確認済み（33機能） | `YuGothM.ttc` | Yu Gothic UI Regular（faceIndex 1） | Version 1.95 | 2026-08-18T07:13:11+09:00 | Weight・StyleはTTC内の各対象faceIndexを`font-face-data.js`へ記録。 |
+| Meiryo | Meiryo | システムフォント | Windows標準、`Meiryo` | 確認済み: 400 / 700 | 確認済み: Normal / Italic | Windows検証環境、`C:\Windows\Fonts`、`usWeightClass` / `fsSelection` | 確認済み（17,189コードポイント） | 確認済み（29機能） | `meiryo.ttc` | Meiryo（faceIndex 0） | Version 6.51 | 2026-08-18T07:13:11+09:00 | Weight・Styleは`meiryo.ttc` / `meiryob.ttc`のfaceIndex 0 / 1を確認。 |
+| MS Mincho | MS Mincho | システムフォント | Windows標準、`"ＭＳ 明朝", "MS Mincho", serif` | 確認済み: 400 | 確認済み: Normal | Windows検証環境、`C:\Windows\Fonts`、`usWeightClass` / `fsSelection` | 確認済み（16,134コードポイント） | 確認済み（4機能） | `msmincho.ttc` | MS Mincho（faceIndex 0） | Version 5.32 | 2026-08-18T07:13:11+09:00 | CSS指定はフォールバックを含み、Weight・Style一覧ではない。 |
+| Consolas | Consolas | システムフォント | Windows標準、`Consolas` | 確認済み: 400 / 700 | 確認済み: Normal / Italic | Windows検証環境、`C:\Windows\Fonts`、`usWeightClass` / `fsSelection` | 確認済み（2,489コードポイント） | 確認済み（24機能） | `consola.ttf` | 該当なし | Version 7.01 | 2026-08-18T07:13:11+09:00 | Weight・Styleは単体TTF群を確認。 |
+| Cascadia Code | 未確認 | システムフォント | `"Cascadia Code"`、インストール済みか要確認 | 未確認 | 未確認 | このWindows検証環境の`C:\Windows\Fonts`に対象実ファイルなし | 未確認 | 未確認 | 未確認 | 該当なし | 未確認 | 2026-08-18T07:13:11+09:00 | Font Family、Weight、Styleを推測で補わない。 |
+| Courier New | Courier New | システムフォント | Windows標準、`"Courier New"` | 確認済み: 400 / 700 | 確認済み: Normal / Italic | Windows検証環境、`C:\Windows\Fonts`、`usWeightClass` / `fsSelection` | 確認済み（3,180コードポイント） | 確認済み（14機能） | `cour.ttf` | 該当なし | Version 6.95 | 2026-08-18T07:13:11+09:00 | Weight・Styleは単体TTF群を確認。 |
+| Times New Roman | Times New Roman | システムフォント | Windows標準、`"Times New Roman"` | 確認済み: 400 / 700 | 確認済み: Normal / Italic | Windows検証環境、`C:\Windows\Fonts`、`usWeightClass` / `fsSelection` | 確認済み（3,678コードポイント） | 確認済み（25機能） | `times.ttf` | 該当なし | Version 7.12 | 2026-08-18T07:13:11+09:00 | Weight・Styleは単体TTF群を確認。 |
+| Noto Sans JP | Noto Sans JP | Webフォント | Google Fonts CSS API、`"Noto Sans JP", sans-serif` | このアプリで読み込み確認済み: Regular 400 / Bold 700。ファミリー全体は未確認 | このアプリで読み込み確認済み: Normal。ファミリー全体は未確認 | このアプリのGoogle Fonts CSS設定、指定ウェイト400 / 700 | 確認済み（16,657コードポイント、124ファイルの`cmap`統合） | 確認済み（11機能） | `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap` | 該当なし | Version 2.004-H2;hotconv 1.0.118;makeotfexe 2.5.65603 | 2026-08-18 | Google Fonts配信WOFF2を指定UA・ウェイト400 / 700で解析した現時点の一例。CSS、配信内容、利用可能Weight・Styleは将来変化し得る。 |
 
 ## 更新ルール
 

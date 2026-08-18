@@ -5,6 +5,8 @@
 - Weightは検証環境で確認済みの値と、このアプリで読み込み確認済みの値を分離できる構造にした。Noto Sans JPは既存のGoogle Fonts CSS設定に基づきRegular 400 / Bold 700とNormalを読み込み確認済みとして表示し、ファミリー全体は未確認のままとした。Cascadia Codeはこの検証環境に対象実ファイルがないため未確認を維持した。
 - Styleは専用書体と擬似Styleを分離し、専用Italicを確認できないフォントをItalic対応とは表示しない。Windowsの実フォントで確認済みのカードには、検証環境限定であることを表示する。
 - 表示モードの`詳細`ボタンと描画分岐を削除した。通常カードの属性欄には、公式に確認した文字体系、文字幅、書体分類、利用環境、`収録文字データ: 解析済み / 未解析`を残し、OpenType機能は既存の共通ダイアログを維持した。
+- `docs/FONT_ADDING_GUIDE.md`と`docs/FONT_ANALYSIS_SOURCES.md`へ、Font Family、個別フェイス、Weight、Styleを別の情報として扱う運用を反映した。CSSのフォールバック指定は同じフォントファミリーの構成要素ではないことを明記した。
+- WindowsシステムフォントではOS/2の`usWeightClass`と専用Italicを示す`fsSelection`を確認根拠にし、検証環境限定の結果として記録する。Webフォントではファミリー全体の提供情報と、このアプリが読み込み確認したWeight・Styleを分ける。擬似Italicを専用Italic対応として扱わず、未確認のWeight・Styleは推測で補わない。
 
 ## 2026-08-18 PR #7: cmap/ OpenType情報分離とCI追加
 
