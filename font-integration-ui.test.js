@@ -120,12 +120,13 @@ test('Webフォントも同じカード構造でOpenType情報を扱う', () => 
   assert.match(html, /fonts\.googleapis\.com/);
 });
 
-test('WeightとStyleは全カード共通のFont Family情報として表示する', () => {
+test('WeightとStyleは全カード共通の個別フェイス情報として表示し、重複するFont Family行は出力しない', () => {
   assert.match(app, /fontFace: createFontFaceProfile\(font\)/);
-  assert.match(app, /Font Family:/);
   assert.match(app, /Weight:/);
   assert.match(app, /Style:/);
   assert.match(app, /function createFontFaceProfile\(font\)/);
+  assert.match(app, /function fontVariantInfoRows\(font\)/);
+  assert.doesNotMatch(app, /Font Family:/);
   assert.match(app, /const fontFaceData = window\.FontFaceData/);
   assert.match(app, /const analyzed = fontFaceData\.fonts\?\.\[font\.id\]/);
   assert.match(app, /loadedWeights: metadata\.loadedWeights \|\| font\.delivery\?\.weights/);
@@ -138,6 +139,8 @@ test('Windows実フォントの生成データはWeightを順序付きで集約�
   require('node:vm').runInNewContext(fontFaceDataSource, context);
   const data = context.window.FontFaceData;
   assert.deepEqual([...data.fonts['segoe-ui'].availableWeights], [300, 350, 400, 600, 700, 900]);
+  assert.equal(data.fonts['segoe-ui'].family, 'Segoe UI');
+  assert.equal(data.fonts['segoe-ui'].sources[0].family, 'Segoe UI');
   assert.deepEqual([...data.fonts['yu-gothic-ui'].availableStyles].map((style) => style.value), ['normal']);
   assert.equal(data.fonts['meiryo'].sources.some((source) => source.fileName === 'meiryo.ttc' && source.faceIndex === 1), true);
   assert.equal(data.fonts.consolas.availableStyles.some((style) => style.value === 'italic' && style.native), true);
@@ -145,12 +148,14 @@ test('Windows実フォントの生成データはWeightを順序付きで集約�
   assert.match(data.fonts['segoe-ui'].verification.label, /この検証環境（Windows）で確認済み/);
 });
 
-test('Weight・Style情報は既存の属性リストと狭幅対応を使い、Italicを推測表示しない', () => {
-  assert.match(app, /fontFaceInfoRows\(font\)/);
+test('Weight・Style情報は既存の属性リストと狭幅対応を使い、確認範囲を区別してItalicを推測表示しない', () => {
+  assert.match(app, /fontVariantInfoRows\(font\)/);
   assert.match(css, /\.font-card\s*\{[\s\S]*?min-width:\s*0/);
   assert.match(css, /\.attribute-list li\s*\{[\s\S]*?overflow-wrap:\s*anywhere/);
   assert.doesNotMatch(app, /Italic対応/);
   assert.match(html, /font-face-data\.js[\s\S]*app\.js/);
+  assert.match(fontFaceDataSource, /この検証環境（Windows）で確認済み/);
+  assert.match(fs.readFileSync('font-metadata.js', 'utf8'), /このアプリで読み込み確認済み/);
 });
 
 test('OpenType機能ダイアログにはボタン、一覧、説明欄の要素があり、同一ダイアログを再利用する', () => {

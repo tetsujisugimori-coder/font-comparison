@@ -869,12 +869,11 @@ function createFontFaceProfile(font) {
   };
 }
 
-function fontFaceInfoRows(font) {
+function fontVariantInfoRows(font) {
   const profile = font.attributes?.fontFace || createFontFaceProfile(font);
   const weight = window.FontMetadata?.formatWeightSummary(profile) || '未確認';
   const style = window.FontMetadata?.formatStyleSummary(profile) || '未確認';
   return `
-    <li>Font Family: ${escapeHtml(profile.family)}</li>
     <li>Weight: ${escapeHtml(weight)}</li>
     <li>Style: ${escapeHtml(style)}</li>
   `;
@@ -1035,7 +1034,7 @@ function renderCards() {
             <li>文字幅: ${escapeHtml(font.attributes.width)}</li>
             <li>書体分類: ${escapeHtml(font.attributes.classification)}</li>
             <li>利用環境: ${escapeHtml(font.attributes.environment)}</li>
-            ${fontFaceInfoRows(font)}
+            ${fontVariantInfoRows(font)}
             <li>取得元: ${escapeHtml(font.fontOrigin)} / ${escapeHtml(font.attributes.sourceKind)} (${escapeHtml(font.attributes.source)})</li>
             <li>${openTypeFeatureSummaryText(font)}</li>
             ${officialMetadataHtml(font)}

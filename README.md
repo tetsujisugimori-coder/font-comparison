@@ -14,9 +14,9 @@
 - PC、狭幅、スマートフォン、OSダークモード対応
 - Memo Nexusから比較文章を受け取り、検証済みURLへ選択結果を返す連携モード
 
-## Font Family、Weight、Style
+## フォントファミリー、Weight、Style
 
-各カードはFont Family、Weight、Styleを共通のフォント情報として表示します。Boldは別カードや別フォントではなく、通常は同じFont Family内のWeight 700として扱います。
+カード見出しはフォントファミリー名です。属性欄では同じ名前を繰り返さず、そのファミリー内で確認できたWeightとStyleを表示します。Boldは別カードや別フォントではなく、通常は同じフォントファミリー内のWeight 700として扱います。個別のフォントフェイスはWeightとStyleの組み合わせです。
 
 Windowsシステムフォントは、この検証環境の `C:\Windows\Fonts` にあるTTF / OTF / TTC / OTCをfontToolsで確認し、Font Family、OS/2の`usWeightClass`、専用Italicの有無を表示します。`font-face-data.js`には確認日、検証環境、解析元ファイル、TTC/OTCのfaceIndexを記録します。この結果は他のOSや別バージョンの同名フォントまで保証するものではありません。解析できなかったカードは推測せず未確認と表示します。
 

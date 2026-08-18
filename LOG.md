@@ -1,6 +1,6 @@
 ## 2026-08-18 Font FamilyのWeight / Style表示追加
 
-- 既存のフォントメタデータ補助とカードの属性リストを拡張し、全フォントでFont Family、Weight、Styleを同じ情報モデルとして表示するようにした。
+- カード見出しをフォントファミリー名として維持し、属性欄では重複するFont Family行を表示せず、同一ファミリー内の個別フェイス情報であるWeightとStyleだけを表示するようにした。
 - `analyze_windows_font_faces.py`を追加し、Windows検証環境の`C:\Windows\Fonts`からTTF / OTF / TTC / OTCをfontToolsで解析して`font-face-data.js`を生成するようにした。OS/2の`usWeightClass`、専用ItalicのfsSelection、解析元ファイル、TTC/OTCのfaceIndex、確認日・環境を記録する。
 - Weightは検証環境で確認済みの値と、このアプリで読み込み確認済みの値を分離できる構造にした。Noto Sans JPは既存のGoogle Fonts CSS設定に基づきRegular 400 / Bold 700とNormalを読み込み確認済みとして表示し、ファミリー全体は未確認のままとした。Cascadia Codeはこの検証環境に対象実ファイルがないため未確認を維持した。
 - Styleは専用書体と擬似Styleを分離し、専用Italicを確認できないフォントをItalic対応とは表示しない。Windowsの実フォントで確認済みのカードには、検証環境限定であることを表示する。
