@@ -30,9 +30,24 @@ function appFunctionWithDependencies(name, nextName, dependencies) {
 test('Memo Nexus連携パネルは通常起動時に非表示で必要な操作を持つ', () => {
   assert.match(html, /id="memoNexusPanel"[^>]*hidden/);
   assert.match(html, /id="returnToMemoButton"[^>]*>Memo Nexusで使用/);
-  assert.match(html, /id="copyFontSettingButton"[^>]*>フォント設定をコピー/);
-  assert.match(html, /id="recommendedOnly"/);
+  assert.match(html, /id="copyFontSettingButton"[^>]*>フォント指定をコピー/);
+  assert.match(html, /コピー内容：用途、フォント名、font-family/);
+  assert.match(html, /id="fontSettingCopyPreview"/);
+  assert.doesNotMatch(html, /id="recommendedOnly"/);
+  assert.doesNotMatch(html, /この用途への推奨だけ表示/);
   assert.match(html, /integration-utils\.js/);
+  assert.match(html, /font-recommendation\.js[\s\S]*app\.js/);
+});
+
+test('連携パネルはキーボード操作可能な3問アンケートを持つ', () => {
+  assert.equal((html.match(/<fieldset>/g) || []).length, 3);
+  assert.match(html, /<legend>使用言語<\/legend>/);
+  assert.match(html, /<legend>文章の雰囲気<\/legend>/);
+  assert.match(html, /<legend>主な用途<\/legend>/);
+  for (const name of ['recommendationLanguage', 'recommendationMood', 'recommendationPurpose']) {
+    assert.match(html, new RegExp(`name="${name}"`));
+  }
+  assert.match(html, /id="fontRecommendationResults"[^>]*aria-live="polite"/);
 });
 
 test('受け取った比較文章はtextContentまたは安全な文字描画を経由しHTMLとして解釈しない', () => {
@@ -42,12 +57,39 @@ test('受け取った比較文章はtextContentまたは安全な文字描画を
   assert.doesNotMatch(app, /memoNexusSample\.innerHTML\s*=/);
 });
 
-test('連携モードでは全フォントを用途別に並べ、明示選択して戻す', () => {
+test('連携モードでは推薦3件を先頭へ並べても全フォントを残し、明示選択して戻す', () => {
   assert.match(app, /state\.selectedIds = fonts\.map/);
-  assert.match(app, /recommendedFor/);
-  assert.match(app, /この用途に推奨/);
+  assert.match(app, /recommendationApi\.recommendFonts\(fonts, recommendationAnswers\(\), 3\)/);
+  assert.match(app, /const selectedFonts = orderedFonts\(fonts\.filter\(\(font\) => state\.selectedIds\.includes\(font\.id\)\)\)/);
+  assert.match(app, /推薦\$\{recommendation\.rank\}位/);
+  assert.match(app, /recommendation\.reasons\.map/);
   assert.match(app, /selectedMemoFontId = font\.id/);
   assert.match(app, /location\.assign\(integrationApi\.buildMemoNexusReturnUrl/);
+});
+
+test('Memo Nexusのtargetは用途だけを初期選択し、言語と雰囲気は未選択のままにする', () => {
+  assert.match(app, /const targetPurposes = \{ body: 'writing', heading: 'heading', code: 'code' \}/);
+  assert.match(app, /name="recommendationPurpose"/);
+  assert.doesNotMatch(app, /recommendationLanguage[^\n]+checked/);
+  assert.doesNotMatch(app, /recommendationMood[^\n]+checked/);
+});
+
+test('候補とカードはシステムフォントとWebフォントを文字で識別する', () => {
+  assert.match(html, /システムフォント[\s\S]*端末にインストール/);
+  assert.match(html, /Webフォント[\s\S]*選択後にインターネットから読み込み/);
+  assert.match(html, /CSSの後続フォントへフォールバック/);
+  assert.match(app, /fontSourceTypeLabel/);
+  assert.match(app, /Webフォント' : 'システムフォント/);
+  assert.match(css, /\.font-source-badge/);
+});
+
+test('コピー確認表示とクリップボードは同じfontSettingCopyTextを生成元にする', () => {
+  assert.match(app, /fontSettingCopyPreview\.textContent = font[\s\S]*integrationApi\.fontSettingCopyText\(memoIntegration, font\)/);
+  assert.match(app, /const copyValue = integrationApi\.fontSettingCopyText\(memoIntegration, selectedMemoFont\(\)\)/);
+  assert.match(app, /fontSettingCopyPreview\.textContent = copyValue;[\s\S]*copyText\(copyValue\)/);
+  assert.match(app, /用途・フォント名・font-familyをコピーしました。/);
+  assert.match(app, /フォント指定のコピーは利用できます。/);
+  assert.doesNotMatch(app, /フォント設定をコピー/);
 });
 
 test('未確認情報を未対応と断定せず公式メタデータと分けて表示する', () => {
@@ -163,9 +205,14 @@ test('WeightとStyleは全カード共通の個別フェイス情報として表
 });
 
 test('追加Webフォントは共通カタログで定義し、初期HTMLでは先行読込しない', () => {
-  for (const id of ['noto-serif-jp-web', 'noto-sans-sc-web', 'noto-sans-tc-web', 'source-han-sans-web', 'inter-web', 'ibm-plex-sans-web', 'jetbrains-mono-web', 'zen-kaku-gothic-new-web', 'shippori-mincho-web']) {
+  const webFontIds = ['noto-sans-jp-web', 'noto-serif-jp-web', 'noto-sans-sc-web', 'noto-sans-tc-web', 'source-han-sans-web', 'inter-web', 'ibm-plex-sans-web', 'jetbrains-mono-web', 'zen-kaku-gothic-new-web', 'shippori-mincho-web'];
+  const catalog = app.slice(app.indexOf('const webFontCatalog ='), app.indexOf('\nfunction makeFontEntry'));
+  for (const id of webFontIds) {
     assert.match(app, new RegExp(`'${id}'`));
   }
+  assert.equal((catalog.match(/memoCssFamily:/g) || []).length, 10);
+  assert.match(app, /const fontIntegrationMetadata =/);
+  assert.match(app, /Object\.entries\(webFontCatalog\)[\s\S]*memoCssFamily: webFont\.memoCssFamily/);
   assert.doesNotMatch(html, /family=Noto\+Sans\+JP/);
   assert.match(app, /function loadWebFont\(font/);
   assert.match(app, /document\.createElement\('link'\)/);
@@ -233,6 +280,8 @@ test('Webフォントは解析済みの見本文字で読込を確認し、実�
 test('Memo Nexusの全カード表示はWebフォントの一括取得を誘発しない', () => {
   assert.match(app, /state\.selectedIds = fonts\.map/);
   assert.match(app, /requestWebFontsForSelectedIds\(fonts, state\.selectedIds, explicitlyRequestedWebFonts, loadWebFont\)/);
+  const recommendationFlow = app.slice(app.indexOf('function showRecommendations('), app.indexOf('\nfunction openTypeFeatureRows('));
+  assert.doesNotMatch(recommendationFlow, /loadWebFont|explicitlyRequestWebFont/);
 });
 
 test('Memo Nexusの明示選択は対象Webフォントへ毎回判断を委譲し、システムフォントは要求しない', () => {

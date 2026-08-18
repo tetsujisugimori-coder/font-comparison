@@ -141,6 +141,7 @@ node scripts/measure-analysis-data.mjs
 - `index.html`: 画面とスクリプト読込
 - `style.css`: 通常表示、薄い文字、凡例、レスポンシブ、ダークモード
 - `app.js`: フォント情報、カード、4表示モード、Memo Nexus連携UI
+- `font-recommendation.js`: Memo Nexus連携用アンケートの純粋な採点・上位3件選出
 - `font-coverage.js`: 3状態判定、範囲の二分探索、安全な書記素クラスタ単位DOM描画
 - `font-coverage-data.js`: 生成済みcmap範囲データ
 - `font-opentype-data.js`: 生成済みGSUB／GPOS機能データ（Noto Sans JPは配信ファイルごとの根拠を含む）
@@ -165,6 +166,8 @@ python -m http.server 4173 --bind 127.0.0.1
 
 ```powershell
 node --check app.js
+node --check integration-utils.js
+node --check font-recommendation.js
 node --check font-coverage.js
 node --check opentype-dialog.js
 node --test *.test.js
@@ -187,6 +190,27 @@ python -m unittest test_analyze_google_fonts.py
 - `memoId`: メモ個別設定の対象ID
 
 戻り先はMemo Nexus公開URLとlocalhost／127.0.0.1だけを許可します。比較文章はHTMLとして挿入せず、テキストノードと未収録文字用の `span` だけをDOM APIで生成します。
+
+連携モードでは、旧「この用途への推奨だけ表示」チェックボックスの代わりに、使用言語、文章の雰囲気、主な用途の3問へ回答すると上位3件を順位・理由付きで表示します。`target=body|heading|code`は主な用途の初期値だけに使い、使用言語と雰囲気は利用者が回答するまで選択しません。推薦は`languages`、`categoryType`、`recommendedFor`、`impression`、`uses`と明示的な雰囲気プロファイルを採点し、`unknown`を`unsupported`として扱いません。推薦後も全カードを残し、推薦3件だけを先頭へ並べます。
+
+システムフォントは端末にインストールされたフォントを使います。Webフォントは推薦の計算・表示だけでは取得せず、利用者が候補またはカードで明示選択した時だけインターネットから読み込みます。読み込みに失敗した場合は、`font-family`の後続フォントへフォールバックします。候補、選択欄、カードではシステムフォント／Webフォントを文字でも識別します。
+
+「フォント指定をコピー」は、選択中の用途、フォント名、`font-family`をコピーします。ボタンの前に同じ`fontSettingCopyText()`で生成した内容を常時表示し、成功時は3項目をコピーしたことを案内します。
+
+次の10Webフォントは、`webFontCatalog`の`id`、表示名、`memoCssFamily`、読込定義を対応させ、Memo Nexus戻りURLの`fontId`／`fontFamily`／`fontLabel`へ設定できます。Memo Nexus側でも同じIDと`font-family`を登録してから受け入れる契約です。
+
+- Noto Sans JP (`noto-sans-jp-web`)
+- Noto Serif JP (`noto-serif-jp-web`)
+- Noto Sans SC (`noto-sans-sc-web`)
+- Noto Sans TC (`noto-sans-tc-web`)
+- Source Han Sans CN (`source-han-sans-web`)
+- Inter (`inter-web`)
+- IBM Plex Sans (`ibm-plex-sans-web`)
+- JetBrains Mono (`jetbrains-mono-web`)
+- Zen Kaku Gothic New (`zen-kaku-gothic-new-web`)
+- Shippori Mincho (`shippori-mincho-web`)
+
+2026-08-18の確認では、`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation.js`、`node --test`（94件）、`git diff --check`が成功しました。実ブラウザでは通常起動、3問と上位3候補、推薦後の全18カード、推薦だけではWebフォントstylesheet 0件、Noto Sans JP明示選択後は同フォントのstylesheet 1件、390px／800px／1280pxの横スクロールなし、ライト／ダーク、XSS文字列の非実行、console error / warning 0件を確認しました。全10Webフォントの戻りURL生成は自動テストで確認し、実ブラウザの連続読込は代表1件に限定しました。コピー成功表示とプレビューは確認しましたが、自動ブラウザからOSクリップボードの内容を読み戻せなかったため、実クリップボード内容の目視確認は未実施です。
 
 ## 公式情報とライセンス
 

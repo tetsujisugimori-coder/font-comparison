@@ -1,3 +1,16 @@
+## 2026-08-18 Memo Nexus推薦アンケートとコピー確認UI
+
+- 「この用途への推奨だけ表示」チェックボックスを削除し、使用言語、文章の雰囲気、主な用途の3問から重複しない上位3件を安定順で提示する方式へ変更した。`target=body|heading|code`は主な用途だけを初期選択し、言語と雰囲気は未回答のまま開始する。
+- 推薦ロジックを`font-recommendation.js`へ分離した。`languages`、`categoryType`、`recommendedFor`、`impression`、`uses`、`sourceType`と、フォントIDごとに明示した小さな雰囲気プロファイルを採点する。`supported`、`partial`、`unknown`、`unsupported`を区別し、未確認を非対応とは断定しない。
+- 推薦3件は順位、フォント名、システム／Webの種別、1～2件の理由、「このフォントを選択」を表示する。全フォントカードは消さず、推薦3件だけを先頭へ並べ、同じ順位・理由をカードにも表示する。
+- システムフォントは端末のインストール済みフォントを使い、Webフォントは選択後にインターネットから読み込み、失敗時はCSSの後続フォントへフォールバックすることを連携パネルへ常時表示した。推薦の計算・並べ替えだけではWebフォントを読み込まず、候補またはカードの明示選択時だけ既存の遅延読込処理を呼ぶ。
+- `webFontCatalog`をWebフォントの`memoCssFamily`の単一情報源にし、Noto Sans JP、Noto Serif JP、Noto Sans SC、Noto Sans TC、Source Han Sans CN、Inter、IBM Plex Sans、JetBrains Mono、Zen Kaku Gothic New、Shippori Minchoの全10件をMemo Nexus戻りURLへ設定できるようにした。日本語、簡体字、繁体字、英数字、コード向けで後続フォントを分けた。
+- 「フォント設定をコピー」を「フォント指定をコピー」へ変更し、「コピー内容：用途、フォント名、font-family」と実際の3行を常時表示した。画面表示とクリップボードは同じ`fontSettingCopyText()`を使い、成功文言を「用途・フォント名・font-familyをコピーしました。」へ変更した。戻り先エラー時の案内も「フォント指定」に統一した。
+- 既存の戻りURL許可リスト、資格情報付きURL拒否、登録済みフォントID検証、比較文章700文字上限、テキストノードによるXSS対策、文字収録判定、OpenTypeダイアログ、KaTeXビューを維持した。
+- 自動テスト: `node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation.js`、`node --test`（94件、失敗0件）、`git diff --check`が成功した。推薦5パターン、`unknown`、最大3件・重複排除・同点安定順、旧UI削除、target初期値、全カード維持、推薦時通信なし、明示選択、全10WebフォントURL、コピー共通生成元、安全性を追加確認した。
+- 実ブラウザ: 通常起動は連携パネル非表示・既存3カード、連携起動は3問・全18カード、回答後は上位3件と理由、推薦表示時はWebフォントstylesheet 0件、Noto Sans JP明示選択後は同フォントのstylesheet 1件を確認した。390pxは1列、800pxはカード2列、1280pxは3列で横スクロールなし。ライト／ダーク切替、XSS文字列の非実行、console error / warning 0件も確認した。
+- 未確認: 全10Webフォントの戻りURL生成は自動テストで確認したが、実ブラウザの連続Webフォント読込はタイムアウトを避けて代表1件だけにした。コピー成功表示とプレビューは一致したが、自動ブラウザからOSクリップボード内容を読み戻せず、実クリップボード内容の目視確認は未実施。現行Memo Nexus `main`は追加WebフォントIDをまだ登録していないため、受入側へ同じIDと`font-family`を追加するまでは実アプリ間の往復は未確認。
+
 ## 2026-08-18 選択時読み込みWebフォントの追加
 
 - Noto Sans JPの既存カード・メタデータ・Weight / Style表示を共通化し、Noto Serif JP、Noto Sans SC、Noto Sans TC、Source Han Sans、Inter、IBM Plex Sans、JetBrains Mono、Zen Kaku Gothic New、Shippori MinchoをWebフォントとして追加した。
