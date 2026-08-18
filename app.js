@@ -691,8 +691,6 @@ const fontRecommendationForm = document.getElementById('fontRecommendationForm')
 const fontRecommendationPrompt = document.getElementById('fontRecommendationPrompt');
 const fontRecommendationResults = document.getElementById('fontRecommendationResults');
 const returnToMemoButton = document.getElementById('returnToMemoButton');
-const copyFontSettingButton = document.getElementById('copyFontSettingButton');
-const fontSettingCopyPreview = document.getElementById('fontSettingCopyPreview');
 let selectedMemoFontId = memoIntegration?.currentFontId || null;
 let currentRecommendations = [];
 
@@ -761,9 +759,14 @@ function appendRecommendationResult(result) {
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'select-recommended-font';
-  button.textContent = result.font.id === selectedMemoFontId ? '選択中' : 'このフォントを選択';
-  button.setAttribute('aria-pressed', String(result.font.id === selectedMemoFontId));
-  button.addEventListener('click', () => selectMemoFont(result.font));
+  const selected = memoIntegration
+    ? result.font.id === selectedMemoFontId
+    : state.selectedIds.includes(result.font.id);
+  button.textContent = selected
+    ? (memoIntegration ? '選択中' : '比較対象に追加済み')
+    : (memoIntegration ? 'このフォントを選択' : '比較対象に追加');
+  button.setAttribute('aria-pressed', String(selected));
+  button.addEventListener('click', () => selectRecommendedFont(result.font));
   item.append(heading, reasons, button);
   fontRecommendationResults.appendChild(item);
 }
@@ -780,7 +783,6 @@ function showRecommendations() {
   renderRecommendationResults();
   renderSelector();
   renderCards();
-  memoNexusStatus.textContent = `${currentRecommendations.length}件の候補を順位付きで表示しました。全フォントも引き続き比較できます。`;
 }
 
 function openTypeFeatureRows(font) {
@@ -1546,8 +1548,6 @@ function initializeMemoIntegration() {
   memoNexusSample.textContent = memoIntegration.sample || '比較文章は指定されていません。';
   const initialPurpose = fontRecommendationForm.querySelector(`[name="recommendationPurpose"][value="${targetPurposes[memoIntegration.target]}"]`);
   if (initialPurpose) initialPurpose.checked = true;
-  updateFontSettingCopyPreview();
-  renderRecommendationResults();
 
   const canReturn = memoIntegration.errors.length === 0
     && integrationApi.isAllowedReturnUrl(memoIntegration.returnUrl);
@@ -1556,39 +1556,25 @@ function initializeMemoIntegration() {
     const detail = memoIntegration.errors.length
       ? memoIntegration.errors.join(' ')
       : '安全なMemo Nexusの戻り先を確認できません。';
-    memoNexusStatus.textContent = `${detail} フォント指定のコピーは利用できます。`;
+    memoNexusStatus.textContent = `${detail} 比較は続けられますが、Memo Nexusへ戻ることはできません。`;
   }
-}
-
-async function copyText(value) {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(value);
-      return;
-    } catch {
-      // ローカルファイルなどClipboard APIが使えない環境では下の方法を試します。
-    }
-  }
-  const textarea = document.createElement('textarea');
-  textarea.value = value;
-  textarea.className = 'copy-fallback';
-  document.body.appendChild(textarea);
-  textarea.select();
-  const copied = document.execCommand('copy');
-  textarea.remove();
-  if (!copied) throw new Error('クリップボードへコピーできませんでした。');
 }
 
 function selectedMemoFont() {
   return fonts.find((font) => font.id === selectedMemoFontId);
 }
 
-function updateFontSettingCopyPreview() {
-  if (!memoIntegration || !fontSettingCopyPreview) return;
-  const font = selectedMemoFont();
-  fontSettingCopyPreview.textContent = font
-    ? integrationApi.fontSettingCopyText(memoIntegration, font)
-    : '';
+function selectComparisonFont(font) {
+  if (!state.selectedIds.includes(font.id)) state.selectedIds.push(font.id);
+  explicitlyRequestWebFont(font);
+  renderRecommendationResults();
+  renderSelector();
+  renderCards();
+}
+
+function selectRecommendedFont(font) {
+  if (memoIntegration) selectMemoFont(font);
+  else selectComparisonFont(font);
 }
 
 function selectMemoFont(font) {
@@ -1598,7 +1584,6 @@ function selectMemoFont(font) {
   memoNexusStatus.textContent = request.isWebFont
     ? `${font.name}を選択しました。Webフォントの読込状態はカードに表示します。`
     : `${font.name}を選択しました。内容を確認してMemo Nexusへ戻れます。`;
-  updateFontSettingCopyPreview();
   renderRecommendationResults();
   renderSelector();
   renderCards();
@@ -1655,32 +1640,18 @@ function bindControls() {
     renderCards();
   });
 
-  fontRecommendationForm.addEventListener('submit', (event) => {
-    event.preventDefault();
-    showRecommendations();
-  });
+  fontRecommendationForm.addEventListener('change', showRecommendations);
   returnToMemoButton.addEventListener('click', () => {
     try {
       location.assign(integrationApi.buildMemoNexusReturnUrl(memoIntegration, selectedMemoFont()));
     } catch (error) {
-      memoNexusStatus.textContent = `${error.message} フォント指定をコピーして手動で利用してください。`;
+      memoNexusStatus.textContent = `${error.message} 比較状態は保持しています。連携URLを確認してください。`;
     }
-  });
-  copyFontSettingButton.addEventListener('click', () => {
-    const copyValue = integrationApi.fontSettingCopyText(memoIntegration, selectedMemoFont());
-    fontSettingCopyPreview.textContent = copyValue;
-    copyText(copyValue)
-      .then(() => {
-        memoNexusStatus.textContent = '用途・フォント名・font-familyをコピーしました。';
-      })
-      .catch((error) => {
-        memoNexusStatus.textContent = error.message || 'フォント指定をコピーできませんでした。';
-      });
   });
 }
 
 initializeMemoIntegration();
-renderSelector();
+showRecommendations();
 bindControls();
 bindOpenTypeDialogEvents();
 updateControlLabels();

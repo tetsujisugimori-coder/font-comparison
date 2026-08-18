@@ -7,7 +7,6 @@ const test = require('node:test');
 const {
   MAX_SAMPLE_LENGTH,
   buildMemoNexusReturnUrl,
-  fontSettingCopyText,
   isAllowedReturnUrl,
   parseMemoNexusParams
 } = require('./integration-utils');
@@ -125,7 +124,7 @@ test('未登録の現在フォントIDを連携入力として受け入れない
   assert.equal(result.currentFontId, fontIds[0]);
 });
 
-test('不正な戻り先では遷移URLを作らずコピー用文字列は作れる', () => {
+test('不正な戻り先では遷移URLを作らない', () => {
   const context = {
     target: 'heading',
     scope: 'global',
@@ -134,5 +133,4 @@ test('不正な戻り先では遷移URLを作らずコピー用文字列は作�
     errors: []
   };
   assert.throws(() => buildMemoNexusReturnUrl(context, font), /安全なMemo Nexus/);
-  assert.match(fontSettingCopyText(context, font), /font-family: "Yu Gothic UI"/);
 });

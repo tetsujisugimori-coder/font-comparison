@@ -33,56 +33,56 @@
         <h2 id="memoNexusTitle">Memo Nexusからフォントを選択中</h2>
         <p id="memoNexusContext"></p>
       </div>
-      <div class="font-source-guide" aria-label="フォントの読み込み方法">
-        <p><strong>システムフォント</strong>：端末にインストールされているフォントを使用します。</p>
-        <p><strong>Webフォント</strong>：選択後にインターネットから読み込みます。</p>
-        <p>読み込みに失敗した場合は、CSSの後続フォントへフォールバックします。</p>
-      </div>
-      <form id="fontRecommendationForm" class="font-recommendation-form">
-        <div class="font-recommendation-heading">
-          <h3>フォント選びを手伝う</h3>
-          <p>3つの質問から候補を3件提示します。推薦後もすべてのフォントを比較できます。</p>
-        </div>
-        <div class="font-question-grid">
-          <fieldset>
-            <legend>使用言語</legend>
-            <label><input type="radio" name="recommendationLanguage" value="japanese" required> 日本語</label>
-            <label><input type="radio" name="recommendationLanguage" value="simplifiedChinese"> 簡体字中国語</label>
-            <label><input type="radio" name="recommendationLanguage" value="traditionalChinese"> 繁体字中国語</label>
-            <label><input type="radio" name="recommendationLanguage" value="latin"> 英数字中心</label>
-          </fieldset>
-          <fieldset>
-            <legend>文章の雰囲気</legend>
-            <label><input type="radio" name="recommendationMood" value="casual" required> 親しみやすい・カジュアル</label>
-            <label><input type="radio" name="recommendationMood" value="neutral"> 中立・読みやすさ重視</label>
-            <label><input type="radio" name="recommendationMood" value="formal"> 落ち着いた・フォーマル</label>
-          </fieldset>
-          <fieldset>
-            <legend>主な用途</legend>
-            <label><input type="radio" name="recommendationPurpose" value="writing" required> 長文を書く</label>
-            <label><input type="radio" name="recommendationPurpose" value="reading"> 長文を読む</label>
-            <label><input type="radio" name="recommendationPurpose" value="heading"> 見出し・短文</label>
-            <label><input type="radio" name="recommendationPurpose" value="code"> プログラミングコード</label>
-          </fieldset>
-        </div>
-        <button id="recommendFontsButton" type="submit">候補を3件表示</button>
-      </form>
-      <section class="font-recommendation-results" aria-labelledby="fontRecommendationResultsTitle">
-        <h3 id="fontRecommendationResultsTitle">おすすめ候補</h3>
-        <p id="fontRecommendationPrompt">使用言語と文章の雰囲気を回答すると、候補を表示できます。</p>
-        <ol id="fontRecommendationResults" aria-live="polite" aria-atomic="true"></ol>
-      </section>
       <div class="memo-integration-actions">
         <button id="returnToMemoButton" type="button">Memo Nexusで使用</button>
-        <button id="copyFontSettingButton" type="button">フォント指定をコピー</button>
-        <p class="copy-content-label">コピー内容：用途、フォント名、font-family</p>
-        <pre id="fontSettingCopyPreview" aria-label="コピーするフォント指定"></pre>
       </div>
       <div class="memo-sample-block">
         <strong>Memo Nexusから受け取った比較文章</strong>
         <pre id="memoNexusSample"></pre>
       </div>
       <p id="memoNexusStatus" class="memo-integration-status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section id="fontSearchPanel" class="font-search-panel" aria-labelledby="fontSearchTitle">
+      <div class="font-source-guide" aria-label="フォントの読み込み方法">
+        <p><strong>システムフォント</strong>：端末にインストールされているフォントを使用します。</p>
+        <p><strong>Webフォント</strong>：選択後にインターネットから読み込みます。</p>
+        <p>読み込みに失敗した場合は、CSSの後続フォントへフォールバックします。</p>
+      </div>
+      <form id="fontRecommendationForm" class="font-recommendation-form" aria-labelledby="fontSearchTitle">
+        <div class="font-recommendation-heading">
+          <h2 id="fontSearchTitle">条件からフォントを探す</h2>
+          <p>使用言語・文章の雰囲気・主な用途を選ぶと、条件に合うフォントを3件表示します。</p>
+          <p>収録されているフォントを条件から探す機能です。候補以外のフォントも引き続き比較できます。</p>
+        </div>
+        <div class="font-question-grid">
+          <fieldset>
+            <legend>使用言語</legend>
+            <label><input type="radio" name="recommendationLanguage" value="japanese" checked> 日本語</label>
+            <label><input type="radio" name="recommendationLanguage" value="simplifiedChinese"> 簡体字中国語</label>
+            <label><input type="radio" name="recommendationLanguage" value="traditionalChinese"> 繁体字中国語</label>
+            <label><input type="radio" name="recommendationLanguage" value="latin"> 英数字中心</label>
+          </fieldset>
+          <fieldset>
+            <legend>文章の雰囲気</legend>
+            <label><input type="radio" name="recommendationMood" value="casual"> 親しみやすい・カジュアル</label>
+            <label><input type="radio" name="recommendationMood" value="neutral" checked> 中立・読みやすさ重視</label>
+            <label><input type="radio" name="recommendationMood" value="formal"> 落ち着いた・フォーマル</label>
+          </fieldset>
+          <fieldset>
+            <legend>主な用途</legend>
+            <label><input type="radio" name="recommendationPurpose" value="writing" checked> 長文を書く</label>
+            <label><input type="radio" name="recommendationPurpose" value="reading"> 長文を読む</label>
+            <label><input type="radio" name="recommendationPurpose" value="heading"> 見出し・短文</label>
+            <label><input type="radio" name="recommendationPurpose" value="code"> プログラミングコード</label>
+          </fieldset>
+        </div>
+      </form>
+      <section class="font-recommendation-results" aria-labelledby="fontRecommendationResultsTitle">
+        <h3 id="fontRecommendationResultsTitle">検索候補</h3>
+        <p id="fontRecommendationPrompt" hidden>条件を選ぶと候補を表示できます。</p>
+        <ol id="fontRecommendationResults" aria-live="polite" aria-atomic="true"></ol>
+      </section>
     </section>
 
     <div id="fontComparisonView" class="app-shell">
@@ -162,8 +162,6 @@
 
       <div id="katexExamples"></div>
     </main>
-
-    <div id="copyToast" class="copy-toast" role="status" aria-live="polite" aria-atomic="true" hidden></div>
 
     <dialog id="openTypeFeatureDialog" class="open-type-dialog" aria-labelledby="openTypeFeatureDialogTitle">
       <div class="open-type-dialog-header">

@@ -60,22 +60,12 @@
     return url.toString();
   }
 
-  function fontSettingCopyText(context, font) {
-    const targetLabels = { body: '本文', heading: '見出し', code: 'コード' };
-    return [
-      `用途: ${targetLabels[context?.target] || '本文'}`,
-      `フォント: ${font.name}`,
-      `font-family: ${font.memoCssFamily}`
-    ].join('\n');
-  }
-
   const api = {
     MAX_SAMPLE_LENGTH,
     PRODUCTION_MEMO_URL,
     SCOPES,
     TARGETS,
     buildMemoNexusReturnUrl,
-    fontSettingCopyText,
     isAllowedReturnUrl,
     parseMemoNexusParams
   };

@@ -12,6 +12,7 @@
 - OpenType機能情報を「OpenType機能」として、カードごとに共通ダイアログで確認
 - KaTeX数式フォント専用ビュー（51用例）
 - PC、狭幅、スマートフォン、OSダークモード対応
+- 通常表示とMemo Nexus連携で共通の3条件から上位3フォントを探せる検索UI
 - Memo Nexusから比較文章を受け取り、検証済みURLへ選択結果を返す連携モード
 
 ## フォントファミリー、Weight、Style
@@ -26,7 +27,7 @@ Italicは専用書体が確認できた場合だけStyleとして扱います。
 
 ## 選択時に読み込むWebフォント
 
-Webフォントは初期表示では取得せず、チェックボックスで選択したフォントだけを一度だけ読み込みます。Google Fonts配信は選択時にCSS stylesheetを追加し、解析済みcmapに存在する見本文字を`Font Loading API`へ渡して必要なWeightを確認します。Source Han SansはAdobe公式タグ`2.005R`の簡体字（CN）SubsetOTFを同APIで読み込みます。通常表示の対象はRegular 400、太字の表示を選んだときはBold 700で、専用Italicは今回読み込みません。Memo Nexus連携モードで全カードを表示しても、明示操作前にWebフォントを取得しません。
+Webフォントは初期表示では取得せず、チェックボックス、検索候補、または連携カードで明示選択したフォントだけを読み込みます。Google Fonts配信は選択時にCSS stylesheetを追加し、解析済みcmapに存在する見本文字を`Font Loading API`へ渡して必要なWeightを確認します。Source Han SansはAdobe公式タグ`2.005R`の簡体字（CN）SubsetOTFを同APIで読み込みます。通常表示の対象はRegular 400、太字の表示を選んだときはBold 700で、専用Italicは今回読み込みません。初期候補の表示、条件変更、候補の並べ替え、Memo Nexus連携モードの全カード表示ではWebフォントを取得しません。
 
 | フォント | 主対象・分類 | 配布元・ライセンス | 注意点 |
 | --- | --- | --- | --- |
@@ -141,7 +142,7 @@ node scripts/measure-analysis-data.mjs
 - `index.html`: 画面とスクリプト読込
 - `style.css`: 通常表示、薄い文字、凡例、レスポンシブ、ダークモード
 - `app.js`: フォント情報、カード、4表示モード、Memo Nexus連携UI
-- `font-recommendation.js`: Memo Nexus連携用アンケートの純粋な採点・上位3件選出
+- `font-recommendation.js`: 通常表示とMemo Nexus連携で共用する条件検索の純粋な採点・上位3件選出
 - `font-coverage.js`: 3状態判定、範囲の二分探索、安全な書記素クラスタ単位DOM描画
 - `font-coverage-data.js`: 生成済みcmap範囲データ
 - `font-opentype-data.js`: 生成済みGSUB／GPOS機能データ（Noto Sans JPは配信ファイルごとの根拠を含む）
@@ -175,7 +176,7 @@ python -m py_compile analyze_font_cmap.py analyze_google_fonts.py
 python -m unittest test_analyze_google_fonts.py
 ```
 
-テストでは3状態、二分探索、サロゲートペア、空白・改行・タブ、未収録クラス、文字順、XSS防止、全表示モード、初期3カード、Memo Nexus連携を確認します。
+テストでは3状態、二分探索、サロゲートペア、空白・改行・タブ、未収録クラス、文字順、XSS防止、全表示モード、初期3カード、共通条件検索、Webフォントの明示選択、Memo Nexus連携を確認します。
 
 ## Memo Nexus連携
 
@@ -191,11 +192,13 @@ python -m unittest test_analyze_google_fonts.py
 
 戻り先はMemo Nexus公開URLとlocalhost／127.0.0.1だけを許可します。比較文章はHTMLとして挿入せず、テキストノードと未収録文字用の `span` だけをDOM APIで生成します。
 
-連携モードでは、旧「この用途への推奨だけ表示」チェックボックスの代わりに、使用言語、文章の雰囲気、主な用途の3問へ回答すると上位3件を順位・理由付きで表示します。`target=body|heading|code`は主な用途の初期値だけに使い、使用言語と雰囲気は利用者が回答するまで選択しません。推薦は`languages`、`categoryType`、`recommendedFor`、`impression`、`uses`と明示的な雰囲気プロファイルを採点し、`unknown`を`unsupported`として扱いません。推薦後も全カードを残し、推薦3件だけを先頭へ並べます。
+「条件からフォントを探す」は通常表示と連携モードで同じフォーム、結果欄、変更イベントを共用します。初期条件は日本語、中立・読みやすさ重視、長文を書くで、起動時から順位・種別・理由・操作付きの上位3件を表示し、ラジオ変更時に自動更新します。`target=body|heading|code`は連携モードの主な用途を長文を書く／見出し・短文／プログラミングコードへ上書きし、言語と雰囲気の既定値は維持します。推薦は`languages`、`categoryType`、`recommendedFor`、`impression`、`uses`と明示的な雰囲気プロファイルを採点し、`unknown`を`unsupported`として扱いません。
 
-システムフォントは端末にインストールされたフォントを使います。Webフォントは推薦の計算・表示だけでは取得せず、利用者が候補またはカードで明示選択した時だけインターネットから読み込みます。読み込みに失敗した場合は、`font-family`の後続フォントへフォールバックします。候補、選択欄、カードではシステムフォント／Webフォントを文字でも識別します。
+通常表示の候補操作は既存の比較対象へフォントを追加し、候補外を含む現在の比較対象を維持します。連携モードでは全18カードを残して推薦3件だけを先頭へ並べ、候補またはカードの操作で連携用の選択フォントを更新します。選択だけでは遷移せず、「Memo Nexusで使用」を押した時だけ検証済みURLへ結果を返します。
 
-「フォント指定をコピー」は、選択中の用途、フォント名、`font-family`をコピーします。ボタンの前に同じ`fontSettingCopyText()`で生成した内容を常時表示し、成功時は3項目をコピーしたことを案内します。
+システムフォントは端末にインストールされたフォントを使います。Webフォントは条件検索の計算・表示・並べ替えだけでは取得せず、利用者が候補、チェックボックス、または連携カードで明示選択した時だけインターネットから読み込みます。読み込みに失敗した場合は、`font-family`の後続フォントへフォールバックします。候補、選択欄、カードではシステムフォント／Webフォントを文字でも識別します。
+
+戻り先が不正な場合はエラーを表示して「Memo Nexusで使用」を無効にし、現在の比較状態は保持します。
 
 次の10Webフォントは、`webFontCatalog`の`id`、表示名、`memoCssFamily`、読込定義を対応させ、Memo Nexus戻りURLの`fontId`／`fontFamily`／`fontLabel`へ設定できます。Memo Nexus側でも同じIDと`font-family`を登録してから受け入れる契約です。
 
@@ -210,7 +213,7 @@ python -m unittest test_analyze_google_fonts.py
 - Zen Kaku Gothic New (`zen-kaku-gothic-new-web`)
 - Shippori Mincho (`shippori-mincho-web`)
 
-2026-08-18の確認では、`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation.js`、`node --test`（94件）、`git diff --check`が成功しました。実ブラウザでは通常起動、3問と上位3候補、推薦後の全18カード、推薦だけではWebフォントstylesheet 0件、Noto Sans JP明示選択後は同フォントのstylesheet 1件、390px／800px／1280pxの横スクロールなし、ライト／ダーク、XSS文字列の非実行、console error / warning 0件を確認しました。全10Webフォントの戻りURL生成は自動テストで確認し、実ブラウザの連続読込は代表1件に限定しました。コピー成功表示とプレビューは確認しましたが、自動ブラウザからOSクリップボードの内容を読み戻せなかったため、実クリップボード内容の目視確認は未実施です。
+2026-08-19の確認では、`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation.js`、`node --test`（95件）、`git diff --check`が成功しました。実ブラウザでは通常起動時の既定3候補、ラジオ変更による即時更新、既存3カードを保った候補追加、明示選択前stylesheet 0件・Webフォント選択後1件を確認しました。連携モードでは単一フォーム、全18カード、targetによる用途初期値、選択だけでは遷移しないこと、戻り操作で`fontSource`、用途、範囲、ID、表示名、メモIDを返すこと、不正URLで比較を維持したエラー表示、XSS風サンプルの非実行、コピーUI 0件を確認しました。全10Webフォントの戻りURL生成は自動テストで確認し、実ブラウザのWebフォント読込は代表例に限定しました。公開済みMemo Nexusとの実アプリ間往復は、受入側の対応状況が同時に確認できないため未確認です。
 
 ## 公式情報とライセンス
 
