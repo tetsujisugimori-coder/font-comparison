@@ -1,9 +1,10 @@
 ## 2026-08-18 Font FamilyのWeight / Style表示追加
 
 - 既存のフォントメタデータ補助とカードの属性リストを拡張し、全フォントでFont Family、Weight、Styleを同じ情報モデルとして表示するようにした。
-- Weightはファミリー全体で利用可能な値と、このアプリで読み込み確認済みの値を分離できる構造にした。Noto Sans JPは既存のGoogle Fonts CSS設定に基づきRegular 400 / Bold 700を読み込み確認済みとして表示し、ファミリー全体は未確認のままとした。
-- Styleは専用書体と擬似Styleを分離できる構造にし、専用Italicを確認できないフォントをItalic対応とは表示しない。既存システムフォントのファミリー内Weight / Styleは根拠がないため未確認とした。
-- フォントカード、OpenType機能、cmap収録情報の既存構造を維持し、フォント追加・再解析・生成データ更新は行っていない。
+- `analyze_windows_font_faces.py`を追加し、Windows検証環境の`C:\Windows\Fonts`からTTF / OTF / TTC / OTCをfontToolsで解析して`font-face-data.js`を生成するようにした。OS/2の`usWeightClass`、専用ItalicのfsSelection、解析元ファイル、TTC/OTCのfaceIndex、確認日・環境を記録する。
+- Weightは検証環境で確認済みの値と、このアプリで読み込み確認済みの値を分離できる構造にした。Noto Sans JPは既存のGoogle Fonts CSS設定に基づきRegular 400 / Bold 700とNormalを読み込み確認済みとして表示し、ファミリー全体は未確認のままとした。Cascadia Codeはこの検証環境に対象実ファイルがないため未確認を維持した。
+- Styleは専用書体と擬似Styleを分離し、専用Italicを確認できないフォントをItalic対応とは表示しない。Windowsの実フォントで確認済みのカードには、検証環境限定であることを表示する。
+- 表示モードの`詳細`ボタンと描画分岐を削除した。通常カードの属性欄には、公式に確認した文字体系、文字幅、書体分類、利用環境、`収録文字データ: 解析済み / 未解析`を残し、OpenType機能は既存の共通ダイアログを維持した。
 
 ## 2026-08-18 PR #7: cmap/ OpenType情報分離とCI追加
 

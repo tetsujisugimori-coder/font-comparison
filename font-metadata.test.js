@@ -39,6 +39,19 @@ test('WeightとStyleはファミリー共通モデルで、読み込み済み情
   assert.equal(metadata.formatStyleSummary(metadata.createFontFaceProfile({ family: 'Unknown' })), '未確認');
 });
 
+test('検証環境で解析したWeightと専用Styleは重複を除き、数値順と確認範囲を表示する', () => {
+  const profile = metadata.createFontFaceProfile({
+    family: 'Example Sans',
+    availableWeights: [700, 350, 400, 700],
+    availableStyles: [{ value: 'italic', native: true }, { value: 'normal', native: true }, { value: 'italic', native: true }],
+    verification: { scope: 'environment', label: 'この検証環境（Windows）で確認済み' }
+  });
+  assert.deepEqual([...profile.availableWeights], [350, 400, 700]);
+  assert.deepEqual([...profile.availableStyles].map((style) => style.value), ['italic', 'normal']);
+  assert.equal(metadata.formatWeightSummary(profile), 'Weight 350 / Regular 400 / Bold 700（この検証環境（Windows）で確認済み）');
+  assert.equal(metadata.formatStyleSummary(profile), 'Italic / Normal（この検証環境（Windows）で確認済み）');
+});
+
 test('擬似Italicは専用Italic対応として表示しない', () => {
   const profile = metadata.createFontFaceProfile({
     family: 'Example Sans',

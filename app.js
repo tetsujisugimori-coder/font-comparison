@@ -557,6 +557,7 @@ const officialFontMetadata = {
 };
 
 const openTypeData = window.FontOpenTypeData || { fonts: {} };
+const fontFaceData = window.FontFaceData || { fonts: {} };
 
 function normalizeOpenTypeProfile(fontId) {
   return buildOpenTypeProfile(fontId);
@@ -830,6 +831,10 @@ function coverageMetadata(font) {
   };
 }
 
+function coverageStatusLabel(coverage) {
+  return coverage.status === 'analyzed' ? '解析済み' : '未解析';
+}
+
 function formatFontVersion(metadata, options) {
   return window.FontMetadata?.formatFontVersion(metadata, options) || '';
 }
@@ -843,21 +848,24 @@ function safeCoverageReason(coverage) {
 }
 
 function createFontFaceProfile(font) {
-  const metadata = font.fontFaceMetadata || {};
+  const analyzed = fontFaceData.fonts?.[font.id];
+  const metadata = analyzed?.status === 'analyzed' ? analyzed : (font.fontFaceMetadata || {});
   return window.FontMetadata?.createFontFaceProfile({
     family: metadata.family || font.name,
     availableWeights: metadata.availableWeights,
     loadedWeights: metadata.loadedWeights || font.delivery?.weights,
     availableStyles: metadata.availableStyles,
     loadedStyles: metadata.loadedStyles,
-    syntheticStyles: metadata.syntheticStyles
+    syntheticStyles: metadata.syntheticStyles,
+    verification: metadata.verification
   }) || {
     family: font.name,
     availableWeights: [],
     loadedWeights: [],
     availableStyles: [],
     loadedStyles: [],
-    syntheticStyles: []
+    syntheticStyles: [],
+    verification: null
   };
 }
 
@@ -906,6 +914,7 @@ function officialMetadataHtml(font) {
   return `
     <li>公式に確認した文字体系: ${font.officialScripts.map(escapeHtml).join(' / ')}</li>
     <li>見本文字の収録判定は言語対応とは別のcmap情報です。</li>
+    <li>収録文字データ: ${coverageStatusLabel(coverage)}</li>
     <li>取得元: ${escapeHtml(font.delivery?.environment || font.attributes?.environment || '-')}</li>
     <li>配信/読み込み情報: ${escapeHtml(font.delivery?.provider || font.source || '-')} / ${escapeHtml(font.delivery?.loadingMethod || '-')}</li>
     ${coverageAnalysisRows(coverage)}
@@ -1109,29 +1118,6 @@ function renderSampleContent(font, sampleArea) {
   } else {
     for (const section of samples.normal) {
       appendSection(section.title, section.text, section.lang);
-    }
-    if (state.mode === 'detail') {
-      const section = document.createElement('section');
-      section.className = 'sample-section';
-      const heading = document.createElement('h4');
-      heading.className = 'section-title';
-      heading.textContent = '属性';
-      const list = document.createElement('ul');
-      list.className = 'attribute-list';
-      const details = [
-        `公式に確認した文字体系: ${font.officialScripts.join(' / ')}`,
-        `文字幅: ${font.attributes.width}`,
-        `書体分類: ${font.attributes.classification}`,
-        `利用環境: ${font.attributes.environment}`,
-        `収録文字データ: ${coverageStatusLabel(coverageMetadata(font))}`
-      ];
-      for (const detail of details) {
-        const item = document.createElement('li');
-        item.textContent = detail;
-        list.appendChild(item);
-      }
-      section.append(heading, list);
-      sampleArea.appendChild(section);
     }
   }
 

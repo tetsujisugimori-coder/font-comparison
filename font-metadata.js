@@ -59,7 +59,10 @@
       loadedWeights: normalizeWeights(metadata.loadedWeights),
       availableStyles: normalizeStyles(metadata.availableStyles),
       loadedStyles: normalizeStyles(metadata.loadedStyles),
-      syntheticStyles: normalizeStyles(metadata.syntheticStyles)
+      syntheticStyles: normalizeStyles(metadata.syntheticStyles),
+      verification: metadata.verification && typeof metadata.verification === 'object'
+        ? { ...metadata.verification }
+        : null
     };
   }
 
@@ -71,7 +74,10 @@
     const loaded = normalizeWeights(profile.loadedWeights);
     if (loaded.length) return `${loaded.map(formatWeight).join(' / ')}（このアプリで読み込み確認済み。ファミリー全体は未確認）`;
     const available = normalizeWeights(profile.availableWeights);
-    if (available.length) return available.map(formatWeight).join(' / ');
+    if (available.length) {
+      const label = profile.verification?.label;
+      return `${available.map(formatWeight).join(' / ')}${label ? `（${label}）` : ''}`;
+    }
     return '未確認';
   }
 
@@ -84,7 +90,10 @@
     const loaded = normalizeStyles(profile.loadedStyles);
     if (loaded.length) return `${loaded.map(formatStyle).join(' / ')}（このアプリで読み込み確認済み）`;
     const available = normalizeStyles(profile.availableStyles);
-    if (available.length) return available.map(formatStyle).join(' / ');
+    if (available.length) {
+      const label = profile.verification?.label;
+      return `${available.map(formatStyle).join(' / ')}${label ? `（${label}）` : ''}`;
+    }
     if (normalizeStyles(profile.syntheticStyles).length) return '専用Styleは未確認';
     return '未確認';
   }
