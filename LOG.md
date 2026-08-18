@@ -1,10 +1,3 @@
-## 2026-08-18 PR #7: CI差分検査と生成ファイル更新の整合性
-
-- `git diff --check` はクリーンなActions作業ツリーでは未コミット差分しか確認しないため、`scripts/check-diff-whitespace.mjs` を追加した。PRではbase...head、pushではbefore..currentを検査し、空または取得不能な比較元では現在HEADの `git show --check` を必ず実行する。
-- Google Fontsの2つの生成JSは、両方を一時生成・再読込検証してから置換するよう変更した。2つ目の置換が失敗した場合は、1つ目をバックアップから復元する。成功・失敗のどちらでも一時ファイルとバックアップを削除する。
-- Pythonテストに一時ファイル作成失敗、不正な一時データ、2つ目の置換失敗とロールバック、generatedAt整合性を追加した。NodeテストにPR/push/workflow_dispatchの検査範囲、無効比較元の代替処理、空白エラーの検出を追加した。
-- 通常CIと手動Live Google Fonts analysisの実行結果は、プッシュ後にこのPRで確認する。
-
 ## 2026-08-18 PR #7: cmap/ OpenType情報分離とCI追加
 
 - 原因: カードの「解析フォント」は `font-coverage-data.js` のcmap解析結果をOpenType解析結果のように混在表示していた。
@@ -301,3 +294,10 @@ Microsoft製品付属7フォントは「Microsoft製品付属（再配布は別�
 - 凡例を「別のフォントで代替表示されています」から「ブラウザが別のフォントによる代替表示を試みます」へ変更し、代替表示の成功を断定しない表現にした。
 - Microsoft LearnのMS Mincho公式情報（`Fixed pitch: True`）に合わせ、このアプリで登録・解析するMS Minchoの文字幅を「等幅」へ修正した。MS PMinchoは別フェイスのプロポーショナル書体として区別する。
 - `font-coverage-data.js`は再生成していない。
+
+## 2026-08-18 PR #7: CI差分検査と生成ファイル更新の整合性
+
+- `git diff --check` はクリーンなActions作業ツリーでは未コミット差分しか確認しないため、`scripts/check-diff-whitespace.mjs` を追加した。PRではbase...head、pushではbefore..currentを検査し、空または取得不能な比較元では現在HEADの `git show --check` を必ず実行する。
+- Google Fontsの2つの生成JSは、両方を一時生成・再読込検証してから置換するよう変更した。2つ目の置換が失敗した場合は、1つ目をバックアップから復元する。成功・失敗のどちらでも一時ファイルとバックアップを削除する。
+- Pythonテストに一時ファイル作成失敗、不正な一時データ、2つ目の置換失敗とロールバック、generatedAt整合性を追加した。NodeテストにPR/push/workflow_dispatchの検査範囲、無効比較元の代替処理、空白エラーの検出を追加した。
+- 通常CIは成功した。手動Live Google Fonts analysisはワークフロー定義がデフォルトブランチに未配置のため、PRブランチからは起動できないことを確認した。
