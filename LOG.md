@@ -1,3 +1,12 @@
+## 2026-08-18 選択時読み込みWebフォントの追加
+
+- Noto Sans JPの既存カード・メタデータ・Weight / Style表示を共通化し、Noto Serif JP、Noto Sans SC、Noto Sans TC、Source Han Sans、Inter、IBM Plex Sans、JetBrains Mono、Zen Kaku Gothic New、Shippori MinchoをWebフォントとして追加した。
+- 初期表示ではWebフォントのstylesheetやフォント本体を取得せず、選択時に必要なWeightだけをCSS stylesheetとFont Loading API、またはFont Loading APIで読み込む。読み込み中、失敗、再試行、読み込み済みの状態を共通UIで表示し、同じフォントは再取得しない。
+- Google Fonts配信はRegular 400 / Bold 700、Normalを読み込み対象にした。Source Han SansはAdobe公式releaseのSource Han Sans CN SubsetOTF（400 / 700）を読み込み、CJKの地域別字形を日本語・繁体字用と混同しない。
+- Noto Sans SCは簡体字向け、Noto Sans TCは繁体字向けとして表示する。Inter、IBM Plex Sans、JetBrains Monoは主にラテン文字向けで、日本語・中国語はフォールバックされることを明記した。JetBrains Monoは等幅・コード用として扱う。
+- 新規Webフォントのcmap、OpenType機能、ファミリー全体の提供Weight / Styleは再解析・推測せず未確認のままとした。既存のNoto Sans JPの解析済みデータは変更していない。
+- READMEと解析元一覧に、配布元、ライセンス、読み込み方針、対象・注意点を記録した。
+
 ## 2026-08-18 Font FamilyのWeight / Style表示追加
 
 - カード見出しをフォントファミリー名として維持し、属性欄では重複するFont Family行を表示せず、同一ファミリー内の個別フェイス情報であるWeightとStyleだけを表示するようにした。

@@ -117,7 +117,8 @@ test('Webフォントも同じカード構造でOpenType情報を扱う', () => 
   assert.match(app, /fontOrigin: 'Webブラウザ'/);
   assert.match(app, /sourceType: 'system'/);
   assert.match(app, /font\.attributes\.sourceKind/);
-  assert.match(html, /fonts\.googleapis\.com/);
+  assert.match(app, /const webFontCatalog =/);
+  assert.match(app, /noto-sans-jp-web/);
 });
 
 test('WeightとStyleは全カード共通の個別フェイス情報として表示し、重複するFont Family行は出力しない', () => {
@@ -130,8 +131,39 @@ test('WeightとStyleは全カード共通の個別フェイス情報として表
   assert.match(app, /const fontFaceData = window\.FontFaceData/);
   assert.match(app, /const analyzed = fontFaceData\.fonts\?\.\[font\.id\]/);
   assert.match(app, /loadedWeights: metadata\.loadedWeights \|\| font\.delivery\?\.weights/);
-  assert.match(app, /loadedStyles: \[\{ value: 'normal', native: true \}\]/);
+  assert.match(app, /loadedStyles: webFont\.styles\.map/);
   assert.doesNotMatch(app, /noto-sans-jp-web[\s\S]*?if \(font\.id === 'noto-sans-jp-web'\)/);
+});
+
+test('追加Webフォントは共通カタログで定義し、初期HTMLでは先行読込しない', () => {
+  for (const id of ['noto-serif-jp-web', 'noto-sans-sc-web', 'noto-sans-tc-web', 'source-han-sans-web', 'inter-web', 'ibm-plex-sans-web', 'jetbrains-mono-web', 'zen-kaku-gothic-new-web', 'shippori-mincho-web']) {
+    assert.match(app, new RegExp(`'${id}'`));
+  }
+  assert.doesNotMatch(html, /family=Noto\+Sans\+JP/);
+  assert.match(app, /function loadWebFont\(font/);
+  assert.match(app, /document\.createElement\('link'\)/);
+  assert.match(app, /new FontFace\(font\.webFont\.family/);
+  assert.match(app, /webFontLoadStates/);
+});
+
+test('Webフォントの読み込み中・失敗・再試行と、選択済みフォントだけの読込を表示する', () => {
+  assert.match(app, /読み込み中/);
+  assert.match(app, /読込失敗/);
+  assert.match(app, /再試行/);
+  assert.match(app, /requestSelectedWebFonts/);
+  assert.match(app, /if \(event\.target\.checked\) loadWebFont\(font\)/);
+  assert.match(app, /web-font-status/);
+  assert.match(css, /\.web-font-notice/);
+  assert.match(app, /webFontFacePromises\.delete\(key\)/);
+});
+
+test('Webフォントの言語別注意とSource Han Sans CNの地域別字形を明示する', () => {
+  assert.match(app, /簡体字向け/);
+  assert.match(app, /繁体字向け/);
+  assert.match(app, /Source Han Sans CN/);
+  assert.match(app, /地域別字形/);
+  assert.match(app, /日本語・中国語は別フォントへフォールバック/);
+  assert.match(app, /JetBrains Mono/);
 });
 
 test('Windows実フォントの生成データはWeightを順序付きで集約し、TTC faceIndexと専用Italicを保持する', () => {
