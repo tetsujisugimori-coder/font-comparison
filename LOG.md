@@ -1,3 +1,13 @@
+## 2026-08-18 Font FamilyのWeight / Style表示追加
+
+- カード見出しをフォントファミリー名として維持し、属性欄では重複するFont Family行を表示せず、同一ファミリー内の個別フェイス情報であるWeightとStyleだけを表示するようにした。
+- `analyze_windows_font_faces.py`を追加し、Windows検証環境の`C:\Windows\Fonts`からTTF / OTF / TTC / OTCをfontToolsで解析して`font-face-data.js`を生成するようにした。OS/2の`usWeightClass`、専用ItalicのfsSelection、解析元ファイル、TTC/OTCのfaceIndex、確認日・環境を記録する。
+- Weightは検証環境で確認済みの値と、このアプリで読み込み確認済みの値を分離できる構造にした。Noto Sans JPは既存のGoogle Fonts CSS設定に基づきRegular 400 / Bold 700とNormalを読み込み確認済みとして表示し、ファミリー全体は未確認のままとした。Cascadia Codeはこの検証環境に対象実ファイルがないため未確認を維持した。
+- Styleは専用書体と擬似Styleを分離し、専用Italicを確認できないフォントをItalic対応とは表示しない。Windowsの実フォントで確認済みのカードには、検証環境限定であることを表示する。
+- 表示モードの`詳細`ボタンと描画分岐を削除した。通常カードの属性欄には、公式に確認した文字体系、文字幅、書体分類、利用環境、`収録文字データ: 解析済み / 未解析`を残し、OpenType機能は既存の共通ダイアログを維持した。
+- `docs/FONT_ADDING_GUIDE.md`と`docs/FONT_ANALYSIS_SOURCES.md`へ、Font Family、個別フェイス、Weight、Styleを別の情報として扱う運用を反映した。CSSのフォールバック指定は同じフォントファミリーの構成要素ではないことを明記した。
+- WindowsシステムフォントではOS/2の`usWeightClass`と専用Italicを示す`fsSelection`を確認根拠にし、検証環境限定の結果として記録する。Webフォントではファミリー全体の提供情報と、このアプリが読み込み確認したWeight・Styleを分ける。擬似Italicを専用Italic対応として扱わず、未確認のWeight・Styleは推測で補わない。
+
 ## 2026-08-18 PR #7: cmap/ OpenType情報分離とCI追加
 
 - 原因: カードの「解析フォント」は `font-coverage-data.js` のcmap解析結果をOpenType解析結果のように混在表示していた。

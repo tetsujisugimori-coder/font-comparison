@@ -7,6 +7,7 @@ const test = require('node:test');
 const html = fs.readFileSync('index.html', 'utf8');
 const app = fs.readFileSync('app.js', 'utf8');
 const css = fs.readFileSync('style.css', 'utf8');
+const fontFaceDataSource = fs.readFileSync('font-face-data.js', 'utf8');
 const katexData = fs.readFileSync('katex-data.js', 'utf8');
 const katexPage = fs.readFileSync('katex-page.js', 'utf8');
 
@@ -45,19 +46,21 @@ test('収録判定データと文字判定スクリプトをapp.jsより先に�
   assert.match(html, /font-coverage-data\.js[\s\S]*font-coverage\.js[\s\S]*app\.js/);
 });
 
-test('通常・詳細・固定マス・実幅枠へ同じ文字判定を適用する', () => {
+test('通常・固定マス・実幅枠へ同じ文字判定を適用する', () => {
   assert.match(app, /state\.mode === 'fixed'[\s\S]*appendCoverageText/);
   assert.match(app, /state\.mode === 'width'[\s\S]*appendCoverageText/);
   assert.match(app, /for \(const section of samples\.normal\)[\s\S]*appendSection/);
-  assert.match(app, /state\.mode === 'detail'/);
+  assert.doesNotMatch(app, /state\.mode === 'detail'/);
   assert.match(css, /\.unsupported-glyph\s*\{[\s\S]*opacity:\s*0\.3/);
 });
 
-test('通常モードの初期3カードと4表示モードを維持する', () => {
+test('通常モードの初期3カードと3表示モードを維持し、詳細モードを削除する', () => {
   assert.match(app, /selectedIds: \['segoe-ui', 'yu-gothic-ui', 'consolas'\]/);
-  for (const mode of ['normal', 'fixed', 'width', 'detail']) {
+  for (const mode of ['normal', 'fixed', 'width']) {
     assert.match(html, new RegExp(`data-mode="${mode}"`));
   }
+  assert.doesNotMatch(html, /data-mode="detail"/);
+  assert.doesNotMatch(app, /詳細用/);
 });
 
 test('凡例は未収録がある解析済みカードだけに出し、未解析は未確認とする', () => {
@@ -67,9 +70,11 @@ test('凡例は未収録がある解析済みカードだけに出し、未解�
   assert.doesNotMatch(app, /別のフォントで代替表示されています。/);
 });
 
-test('MS Minchoは通常カードと詳細表示で共通の等幅属性を使う', () => {
+test('MS Minchoは通常カードの属性欄で等幅属性を表示する', () => {
   assert.match(app, /id: 'ms-mincho',[\s\S]*?width: '等幅'/);
   assert.match(app, /font\.attributes\.width/);
+  assert.match(app, /function coverageStatusLabel\(coverage\)/);
+  assert.match(app, /収録文字データ: \$\{coverageStatusLabel\(coverage\)\}/);
 });
 
 test('KaTeXの51用例と表示切替処理を維持する', () => {
@@ -113,6 +118,44 @@ test('Webフォントも同じカード構造でOpenType情報を扱う', () => 
   assert.match(app, /sourceType: 'system'/);
   assert.match(app, /font\.attributes\.sourceKind/);
   assert.match(html, /fonts\.googleapis\.com/);
+});
+
+test('WeightとStyleは全カード共通の個別フェイス情報として表示し、重複するFont Family行は出力しない', () => {
+  assert.match(app, /fontFace: createFontFaceProfile\(font\)/);
+  assert.match(app, /Weight:/);
+  assert.match(app, /Style:/);
+  assert.match(app, /function createFontFaceProfile\(font\)/);
+  assert.match(app, /function fontVariantInfoRows\(font\)/);
+  assert.doesNotMatch(app, /Font Family:/);
+  assert.match(app, /const fontFaceData = window\.FontFaceData/);
+  assert.match(app, /const analyzed = fontFaceData\.fonts\?\.\[font\.id\]/);
+  assert.match(app, /loadedWeights: metadata\.loadedWeights \|\| font\.delivery\?\.weights/);
+  assert.match(app, /loadedStyles: \[\{ value: 'normal', native: true \}\]/);
+  assert.doesNotMatch(app, /noto-sans-jp-web[\s\S]*?if \(font\.id === 'noto-sans-jp-web'\)/);
+});
+
+test('Windows実フォントの生成データはWeightを順序付きで集約し、TTC faceIndexと専用Italicを保持する', () => {
+  const context = { window: {} };
+  require('node:vm').runInNewContext(fontFaceDataSource, context);
+  const data = context.window.FontFaceData;
+  assert.deepEqual([...data.fonts['segoe-ui'].availableWeights], [300, 350, 400, 600, 700, 900]);
+  assert.equal(data.fonts['segoe-ui'].family, 'Segoe UI');
+  assert.equal(data.fonts['segoe-ui'].sources[0].family, 'Segoe UI');
+  assert.deepEqual([...data.fonts['yu-gothic-ui'].availableStyles].map((style) => style.value), ['normal']);
+  assert.equal(data.fonts['meiryo'].sources.some((source) => source.fileName === 'meiryo.ttc' && source.faceIndex === 1), true);
+  assert.equal(data.fonts.consolas.availableStyles.some((style) => style.value === 'italic' && style.native), true);
+  assert.equal(data.fonts['cascadia-code'].status, 'not-analyzed');
+  assert.match(data.fonts['segoe-ui'].verification.label, /この検証環境（Windows）で確認済み/);
+});
+
+test('Weight・Style情報は既存の属性リストと狭幅対応を使い、確認範囲を区別してItalicを推測表示しない', () => {
+  assert.match(app, /fontVariantInfoRows\(font\)/);
+  assert.match(css, /\.font-card\s*\{[\s\S]*?min-width:\s*0/);
+  assert.match(css, /\.attribute-list li\s*\{[\s\S]*?overflow-wrap:\s*anywhere/);
+  assert.doesNotMatch(app, /Italic対応/);
+  assert.match(html, /font-face-data\.js[\s\S]*app\.js/);
+  assert.match(fontFaceDataSource, /この検証環境（Windows）で確認済み/);
+  assert.match(fs.readFileSync('font-metadata.js', 'utf8'), /このアプリで読み込み確認済み/);
 });
 
 test('OpenType機能ダイアログにはボタン、一覧、説明欄の要素があり、同一ダイアログを再利用する', () => {

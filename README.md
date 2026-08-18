@@ -6,13 +6,23 @@
 
 - Segoe UI、Yu Gothic UI、Meiryo、MS Mincho、Consolas、Cascadia Code、Courier New、Times New Romanの比較
 - 文字サイズ、太さ、行間、字間の変更
-- 通常、固定マス、実幅枠、詳細の4表示モード
+- 通常、固定マス、実幅枠の3表示モード
 - 日本語、英語、繁体字、簡体字、判別、記号、コードの見本
 - cmap解析で未収録と確認できた文字の薄い表示
 - OpenType機能情報を「OpenType機能」として、カードごとに共通ダイアログで確認
 - KaTeX数式フォント専用ビュー（51用例）
 - PC、狭幅、スマートフォン、OSダークモード対応
 - Memo Nexusから比較文章を受け取り、検証済みURLへ選択結果を返す連携モード
+
+## フォントファミリー、Weight、Style
+
+カード見出しはフォントファミリー名です。属性欄では同じ名前を繰り返さず、そのファミリー内で確認できたWeightとStyleを表示します。Boldは別カードや別フォントではなく、通常は同じフォントファミリー内のWeight 700として扱います。個別のフォントフェイスはWeightとStyleの組み合わせです。
+
+Windowsシステムフォントは、この検証環境の `C:\Windows\Fonts` にあるTTF / OTF / TTC / OTCをfontToolsで確認し、Font Family、OS/2の`usWeightClass`、専用Italicの有無を表示します。`font-face-data.js`には確認日、検証環境、解析元ファイル、TTC/OTCのfaceIndexを記録します。この結果は他のOSや別バージョンの同名フォントまで保証するものではありません。解析できなかったカードは推測せず未確認と表示します。
+
+Webフォントでは、フォントファミリー全体で利用できるWeightと、このアプリが実際に読み込むWeightを分けて扱います。現時点のNoto Sans JPは、このアプリのGoogle Fonts CSSで読み込み確認済みのRegular 400とBold 700、およびNormalを表示します。ファミリー全体のWeight / Styleは、別途確認できるまで未確認のままです。
+
+Italicは専用書体が確認できた場合だけStyleとして扱います。ブラウザが通常書体を傾ける擬似Italicは、専用Italic対応とは表示しません。
 
 ## 薄い文字と収録状態
 

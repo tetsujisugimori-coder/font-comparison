@@ -547,6 +547,9 @@ const officialFontMetadata = {
       weights: ['400', '700'],
       details: '文字種ごとにサブセット配信される可能性があります。ブラウザ・言語環境で実際の配信ファイルが異なる場合があります。'
     },
+    fontFaceMetadata: {
+      loadedStyles: [{ value: 'normal', native: true }]
+    },
     officialScripts: ['日本語', 'ラテン'],
     license: 'SIL Open Font License 1.1',
     sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+JP'
@@ -554,18 +557,21 @@ const officialFontMetadata = {
 };
 
 const openTypeData = window.FontOpenTypeData || { fonts: {} };
+const fontFaceData = window.FontFaceData || { fonts: {} };
 
 function normalizeOpenTypeProfile(fontId) {
   return buildOpenTypeProfile(fontId);
 }
 
-fonts.forEach((font) => Object.assign(font, memoFontMetadata[font.id], officialFontMetadata[font.id], {
-  attributes: {
+fonts.forEach((font) => {
+  Object.assign(font, memoFontMetadata[font.id], officialFontMetadata[font.id]);
+  font.attributes = {
     ...font.attributes,
+    fontFace: createFontFaceProfile(font),
     openType: normalizeOpenTypeProfile(font.id)
-  },
-  metadataConfirmedAt: '2026-08-18'
-}));
+  };
+  font.metadataConfirmedAt = '2026-08-18';
+});
 
 const samples = {
   normal: [
@@ -825,6 +831,10 @@ function coverageMetadata(font) {
   };
 }
 
+function coverageStatusLabel(coverage) {
+  return coverage.status === 'analyzed' ? '解析済み' : '未解析';
+}
+
 function formatFontVersion(metadata, options) {
   return window.FontMetadata?.formatFontVersion(metadata, options) || '';
 }
@@ -835,6 +845,38 @@ function shouldDisplayInternalFace(metadata) {
 
 function safeCoverageReason(coverage) {
   return window.FontMetadata?.safeUnparsedReason(coverage) || 'フォントファイルを確認できていません。';
+}
+
+function createFontFaceProfile(font) {
+  const analyzed = fontFaceData.fonts?.[font.id];
+  const metadata = analyzed?.status === 'analyzed' ? analyzed : (font.fontFaceMetadata || {});
+  return window.FontMetadata?.createFontFaceProfile({
+    family: metadata.family || font.name,
+    availableWeights: metadata.availableWeights,
+    loadedWeights: metadata.loadedWeights || font.delivery?.weights,
+    availableStyles: metadata.availableStyles,
+    loadedStyles: metadata.loadedStyles,
+    syntheticStyles: metadata.syntheticStyles,
+    verification: metadata.verification
+  }) || {
+    family: font.name,
+    availableWeights: [],
+    loadedWeights: [],
+    availableStyles: [],
+    loadedStyles: [],
+    syntheticStyles: [],
+    verification: null
+  };
+}
+
+function fontVariantInfoRows(font) {
+  const profile = font.attributes?.fontFace || createFontFaceProfile(font);
+  const weight = window.FontMetadata?.formatWeightSummary(profile) || '未確認';
+  const style = window.FontMetadata?.formatStyleSummary(profile) || '未確認';
+  return `
+    <li>Weight: ${escapeHtml(weight)}</li>
+    <li>Style: ${escapeHtml(style)}</li>
+  `;
 }
 
 function openTypeAnalysisTarget(meta) {
@@ -871,6 +913,7 @@ function officialMetadataHtml(font) {
   return `
     <li>公式に確認した文字体系: ${font.officialScripts.map(escapeHtml).join(' / ')}</li>
     <li>見本文字の収録判定は言語対応とは別のcmap情報です。</li>
+    <li>収録文字データ: ${coverageStatusLabel(coverage)}</li>
     <li>取得元: ${escapeHtml(font.delivery?.environment || font.attributes?.environment || '-')}</li>
     <li>配信/読み込み情報: ${escapeHtml(font.delivery?.provider || font.source || '-')} / ${escapeHtml(font.delivery?.loadingMethod || '-')}</li>
     ${coverageAnalysisRows(coverage)}
@@ -991,6 +1034,7 @@ function renderCards() {
             <li>文字幅: ${escapeHtml(font.attributes.width)}</li>
             <li>書体分類: ${escapeHtml(font.attributes.classification)}</li>
             <li>利用環境: ${escapeHtml(font.attributes.environment)}</li>
+            ${fontVariantInfoRows(font)}
             <li>取得元: ${escapeHtml(font.fontOrigin)} / ${escapeHtml(font.attributes.sourceKind)} (${escapeHtml(font.attributes.source)})</li>
             <li>${openTypeFeatureSummaryText(font)}</li>
             ${officialMetadataHtml(font)}
@@ -1073,29 +1117,6 @@ function renderSampleContent(font, sampleArea) {
   } else {
     for (const section of samples.normal) {
       appendSection(section.title, section.text, section.lang);
-    }
-    if (state.mode === 'detail') {
-      const section = document.createElement('section');
-      section.className = 'sample-section';
-      const heading = document.createElement('h4');
-      heading.className = 'section-title';
-      heading.textContent = '属性';
-      const list = document.createElement('ul');
-      list.className = 'attribute-list';
-      const details = [
-        `公式に確認した文字体系: ${font.officialScripts.join(' / ')}`,
-        `文字幅: ${font.attributes.width}`,
-        `書体分類: ${font.attributes.classification}`,
-        `利用環境: ${font.attributes.environment}`,
-        `収録文字データ: ${coverageStatusLabel(coverageMetadata(font))}`
-      ];
-      for (const detail of details) {
-        const item = document.createElement('li');
-        item.textContent = detail;
-        list.appendChild(item);
-      }
-      section.append(heading, list);
-      sampleArea.appendChild(section);
     }
   }
 
