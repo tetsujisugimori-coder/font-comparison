@@ -10,7 +10,7 @@
 - 日本語、英語、繁体字、簡体字、判別、記号、コードの見本
 - cmap解析で未収録と確認できた文字の薄い表示
 - OpenType機能情報を「OpenType機能」として、カードごとに共通ダイアログで確認
-- KaTeX数式フォント専用ビュー（51用例）
+- KaTeX数式フォント専用ビュー（51用例、LaTeXコピー対応）
 - PC、狭幅、スマートフォン、OSダークモード対応
 - 通常表示とMemo Nexus連携で共通の3条件から上位3フォントを探せる検索UI
 - Memo Nexusから比較文章を受け取り、検証済みURLへ選択結果を返す連携モード
@@ -198,9 +198,13 @@ python -m unittest test_analyze_google_fonts.py
 
 推薦はMemo Nexus PR #114の`FONT_OPTIONS`と照合した`font-recommendation-catalog.js`を使い、カード表示・cmap解析用情報とは分離します。対象言語が`supported`または`partial`の候補を先に採点し、3件に満たない場合だけ`unknown`、それでも不足する場合だけ`unsupported`を補います。各段階内は言語・雰囲気・用途の点数とカタログ順で決定し、理由には一部対応、未確認、非対応の言語状態を明示します。
 
+連携モードの各カードは、推薦理由と同じ契約を確認できるよう「条件検索の言語区分」としてラテン、日本語、簡体字、繁体字の4区分を表示します。この行は`font-recommendation-catalog.js`を参照し、カードの従来概要、公式に確認した文字体系、cmap収録判定とは別情報として併記します。
+
 通常表示の候補操作は既存の比較対象へフォントを追加し、候補外を含む現在の比較対象を維持します。連携モードでは全18カードを残して推薦3件だけを先頭へ並べ、候補またはカードの操作で連携用の選択フォントを更新します。選択だけでは遷移せず、「Memo Nexusで使用」を押した時だけ検証済みURLへ結果を返します。
 
 システムフォントは端末にインストールされたフォントを使います。Webフォントは条件検索の計算・表示・並べ替えだけでは取得せず、利用者が候補、チェックボックス、または連携カードで明示選択した時だけインターネットから読み込みます。読み込みに失敗した場合は、`font-family`の後続フォントへフォールバックします。候補、選択欄、カードではシステムフォント／Webフォントを文字でも識別します。
+
+KaTeX表示中は条件検索パネルを隠し、通常フォントへ戻ると再表示します。`#katex`、`#category-*`、`#fontRolesSection`の直リンクとハッシュ変更も同じ切替規則です。KaTeX用例の「コピー」はLaTeXだけをClipboard APIまたは既存フォールバックでコピーし、成功／失敗を通知します。Memo Nexusの「フォント指定をコピー」、プレビュー、コピー用文字列生成は提供しません。
 
 戻り先が不正な場合はエラーを表示して「Memo Nexusで使用」を無効にし、現在の比較状態は保持します。
 
@@ -217,7 +221,7 @@ python -m unittest test_analyze_google_fonts.py
 - Zen Kaku Gothic New (`zen-kaku-gothic-new-web`)
 - Shippori Mincho (`shippori-mincho-web`)
 
-2026-08-19の確認では、`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation-catalog.js`、`node --check font-recommendation.js`、`node --test`（103件）、`git diff --check`が成功しました。実18フォントの自動テストでは、日本語・中立・長文はYu Gothic UI／Meiryo／Noto Sans JP、日本語・フォーマル・長文はMS Mincho／Noto Serif JP／Shippori Mincho、簡体字・中立・長文はNoto Sans SC／Source Han Sans／Noto Sans TC、繁体字・中立・長文はNoto Sans TC／Noto Sans SC／Source Han Sans、英数字・中立・コードはConsolas／Cascadia Code／JetBrains Monoになりました。実ブラウザでは日本語初期、簡体字、繁体字、英数字コードを確認しました。条件変更中のWebフォントstylesheetは0件、明示選択後だけ1件で、通常表示の比較追加、連携モードの同一順序・全18カード・非自動遷移、XSS風サンプルの文字表示、コピーUI 0件、OSダーク表示も確認しました。390px／タブレット幅／PC幅、ライト表示、コンソール出力は最終ブラウザ確認で再取得していません。公開済みMemo Nexusとの実アプリ間往復も未確認です。
+2026-08-19の確認では、`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation-catalog.js`、`node --check font-recommendation.js`、`node --check katex-page.js`、`node --test`（110件）、`git diff --check`が成功しました。実18フォントの自動テストでは、日本語・中立・長文はYu Gothic UI／Meiryo／Noto Sans JP、日本語・フォーマル・長文はMS Mincho／Noto Serif JP／Shippori Mincho、簡体字・中立・長文はNoto Sans SC／Source Han Sans／Noto Sans TC、繁体字・中立・長文はNoto Sans TC／Noto Sans SC／Source Han Sans、英数字・中立・コードはConsolas／Cascadia Code／JetBrains Monoになりました。Edgeでは通常表示の検索パネル、KaTeX切替と通常復帰、`#category-basic`直リンク、LaTeXコピー成功通知、連携モードの同一候補順・全18カード・Memo NexusコピーUI 0件・契約由来4言語区分、公式情報とcmap情報の併記を確認しました。Webフォントstylesheetは明示選択前0件、選択後1件でした。390px／タブレット幅／PC幅、ライト／ダーク表示、コンソールerror／warning、公開済みMemo Nexusとの実アプリ間往復は今回未確認です。
 
 ## 公式情報とライセンス
 

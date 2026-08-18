@@ -92,13 +92,17 @@ test('候補とカードはシステムフォントとWebフォントを文字�
   assert.match(css, /\.font-source-badge/);
 });
 
-test('コピーUI・Clipboard API・コピー用文字列生成を残さない', () => {
+test('Memo NexusのコピーUIと文字列生成は戻さず、KaTeXのコピーUIだけを維持する', () => {
   for (const source of [html, app, css, integrationUtils]) {
     assert.doesNotMatch(source, /copyFontSettingButton|fontSettingCopyPreview|fontSettingCopyText/);
   }
   assert.doesNotMatch(app, /navigator\.clipboard|execCommand\(['"]copy/);
   assert.doesNotMatch(html, /フォント指定をコピー|コピー内容：用途/);
-  assert.doesNotMatch(css, /\.copy-toast|\.copy-fallback|\.copy-content-label/);
+  assert.doesNotMatch(css, /\.copy-content-label/);
+  assert.match(html, /id="copyToast" class="copy-toast"/);
+  assert.match(katexPage, /navigator\.clipboard\.writeText\(latex\)/);
+  assert.match(katexPage, /document\.execCommand\('copy'\)/);
+  assert.match(css, /\.copy-toast[\s\S]*\.copy-fallback/);
   assert.match(app, /比較は続けられますが、Memo Nexusへ戻ることはできません。/);
   assert.match(app, /比較状態は保持しています。連携URLを確認してください。/);
 });
@@ -126,6 +130,24 @@ test('推薦契約をカード表示メタデータから分離し、Memo Nexus�
   assert.match(app, /const recommendationFonts = recommendationCatalog\.map/);
   assert.match(app, /return \{ \.\.\.font, \.\.\.metadata \}/);
   assert.match(app, /memoCssFamily: recommendationMetadata\.memoCssFamily/);
+});
+
+test('Memo Nexusカードの条件検索言語は推薦契約の4区分を表示し、カード解析情報と分離する', () => {
+  const recommendationLanguageInfoText = appFunctionWithDependencies('recommendationLanguageInfoText', 'orderedFonts', {
+    recommendationMetadataById: new Map(FONT_OPTIONS.map((font) => [font.id, font])),
+    languageStatusLabel: (value) => ({ supported: '対応', partial: '一部対応', unsupported: '非対応', unknown: '未確認' }[value] || '未確認')
+  });
+
+  assert.equal(
+    recommendationLanguageInfoText({ id: 'segoe-ui' }),
+    '条件検索の言語区分：ラテン 対応 / 日本語 一部対応 / 簡体字 未確認 / 繁体字 未確認'
+  );
+  assert.equal(
+    recommendationLanguageInfoText({ id: 'cascadia-code' }),
+    '条件検索の言語区分：ラテン 対応 / 日本語 非対応 / 簡体字 非対応 / 繁体字 非対応'
+  );
+  assert.match(app, /\$\{officialMetadataHtml\(font\)\}[\s\S]*recommendationLanguageInfoText\(font\)/);
+  assert.doesNotMatch(app.slice(app.indexOf('function recommendationLanguageInfoText('), app.indexOf('\nfunction orderedFonts(')), /font\.languages|korean|韓国語/);
 });
 
 test('収録判定データと文字判定スクリプトをapp.jsより先に読み込む', () => {
@@ -177,7 +199,7 @@ test('MS Minchoは通常カードの属性欄で等幅属性を表示する', ()
 test('KaTeXの51用例と表示切替処理を維持する', () => {
   assert.equal((katexData.match(/\{ id: '[^']+', category:/g) || []).length, 51);
   assert.match(katexPage, /viewButtons\.forEach/);
-  assert.match(katexPage, /setView\('katex'/);
+  assert.match(katexPage, /setView\(isKatexHash\(window\.location\.hash\) \? 'katex' : 'fonts'/);
 });
 
 test('連携UIは狭幅とOSダークモードへ対応する', () => {

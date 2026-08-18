@@ -1236,6 +1236,30 @@ select {
   font-size: 0.82rem;
 }
 
+.copy-toast {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 30;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #243041;
+  color: #fff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.2);
+  font-size: 0.9rem;
+}
+
+.copy-toast.error {
+  background: #9b1c1c;
+}
+
+.copy-fallback {
+  position: fixed;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+}
+
 @media (max-width: 1199px) {
   .card-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));

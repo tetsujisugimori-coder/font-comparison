@@ -1,5 +1,6 @@
 const fontComparisonView = document.getElementById('fontComparisonView');
 const katexView = document.getElementById('katexView');
+const fontSearchPanel = document.getElementById('fontSearchPanel');
 const viewButtons = document.querySelectorAll('.view-button');
 const copyToast = document.getElementById('copyToast');
 let toastTimer;
@@ -15,6 +16,7 @@ function setView(view, updateHash = true) {
   const showKatex = view === 'katex';
   fontComparisonView.hidden = showKatex;
   katexView.hidden = !showKatex;
+  fontSearchPanel.hidden = showKatex;
 
   viewButtons.forEach((button) => {
     const active = button.dataset.view === view;
@@ -28,6 +30,7 @@ function setView(view, updateHash = true) {
 }
 
 function showToast(message, isError = false) {
+  if (!copyToast) return;
   window.clearTimeout(toastTimer);
   copyToast.textContent = message;
   copyToast.classList.toggle('error', isError);
@@ -35,6 +38,10 @@ function showToast(message, isError = false) {
   toastTimer = window.setTimeout(() => {
     copyToast.hidden = true;
   }, 2200);
+}
+
+function isKatexHash(hash) {
+  return hash === '#katex' || hash.startsWith('#category-') || hash === '#fontRolesSection';
 }
 
 async function copyLatex(latex) {
@@ -200,14 +207,12 @@ viewButtons.forEach((button) => {
 });
 
 window.addEventListener('hashchange', () => {
-  if (window.location.hash === '#katex' || window.location.hash.startsWith('#category-') || window.location.hash === '#fontRolesSection') {
-    setView('katex', false);
-  }
+  setView(isKatexHash(window.location.hash) ? 'katex' : 'fonts', false);
 });
 
 renderFontRoles();
 renderExamples();
 const initialHash = window.location.hash;
-setView(initialHash === '#katex' || initialHash.startsWith('#category-') || initialHash === '#fontRolesSection' ? 'katex' : 'fonts', false);
+setView(isKatexHash(initialHash) ? 'katex' : 'fonts', false);
 
 window.renderKatexExample = renderMath;

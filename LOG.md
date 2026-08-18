@@ -1,3 +1,13 @@
+## 2026-08-19 KaTeXコピー復元・画面切替・推薦言語表示の整合
+
+- 原因: Memo Nexusのコピー機能を削除した差分で、KaTeXが以前から共用していた`#copyToast`と`.copy-toast`／`.copy-fallback`まで削除されていた。また、共通条件検索パネルを`fontComparisonView`の外へ移した後もKaTeXの`setView()`が同パネルを切り替えず、連携カードは推薦契約ではなく旧カード用`font.languages`を表示していたため、推薦理由とカード表示が食い違っていた。
+- `#copyToast`とKaTeX用通知・フォールバックCSSだけを復元し、既存のClipboard API、800msタイムアウト、`execCommand('copy')`フォールバック、成功／失敗通知を維持した。`showToast()`は通知要素がない場合も例外にしない。Memo Nexusの「フォント指定をコピー」、プレビュー、`fontSettingCopyText()`は復元していない。
+- `katex-page.js`の`setView()`で`#fontSearchPanel`をフォント比較ビュー、KaTeXビューと同時に切り替えるようにした。`#katex`、`#category-*`、`#fontRolesSection`を共通の`isKatexHash()`で判定し、直リンク、hashchange、通常フォントへの復帰で同じ状態になる。
+- Memo Nexus連携カードに「条件検索の言語区分：ラテン … / 日本語 … / 簡体字 … / 繁体字 …」を表示し、`recommendationMetadataById`の推薦契約を参照するようにした。韓国語は含めず、従来概要、公式に確認した文字体系、cmap収録判定、OpenType情報は従来どおり別行で保持した。
+- 自動テスト: KaTeXコピーのClipboard API成功、`execCommand`成功、両方失敗、通知の成功／失敗、通知要素欠落時、`setView()`、直リンク／hashchange判定を直接実行する`katex-page.test.js`を追加した。Memo Nexusコピー不在とKaTeXコピー存在を別契約として固定し、Segoe UIとCascadia Codeの推薦言語表示も直接確認した。`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation-catalog.js`、`node --check font-recommendation.js`、`node --check katex-page.js`、`node --test`（110件、失敗0件）、`git diff --check`が成功した。
+- 実ブラウザ（Edge）: 通常表示で検索パネルとYu Gothic UI／Meiryo／Noto Sans JPを確認し、KaTeXボタンと`#category-basic`直リンクでは検索パネル非表示、通常フォント復帰では再表示になった。数字用例のコピーで「LaTeXをコピーしました」を確認した。連携モードは全18カード、Memo NexusコピーUI 0件、同じ候補順、Segoe UIの日本語一部対応、Cascadia Codeのラテン対応とCJK非対応、公式情報・cmap情報の併記を確認した。Webフォントstylesheetは明示選択前0件、Noto Sans JP選択後1件だった。
+- 未確認: 390px／タブレット幅／PC幅の再確認、ライト／ダーク表示、コンソールerror／warning、OSクリップボード内容の読み戻し、公開済みMemo Nexusとの実アプリ間往復は今回未確認。
+
 ## 2026-08-19 Memo Nexus推薦契約と段階選出の統一
 
 - 原因: Font Comparisonは全言語状態を合計点だけで並べ、カード表示用の`languages`、`impression`、`uses`も推薦に流用していたため、Memo Nexus PR #114と候補群・スコア・カタログ順が一致しなかった。特に中立キーワードの「中立」が欠け、簡体字・繁体字の`partial`と欧文系の`unsupported`も契約値と異なっていた。

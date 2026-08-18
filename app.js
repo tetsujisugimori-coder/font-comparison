@@ -708,6 +708,12 @@ function languageStatusLabel(value) {
   }[value] || '未確認';
 }
 
+function recommendationLanguageInfoText(font) {
+  const languages = recommendationMetadataById.get(font.id)?.languages;
+  if (!languages) return '条件検索の言語区分：未確認';
+  return `条件検索の言語区分：ラテン ${languageStatusLabel(languages.latin)} / 日本語 ${languageStatusLabel(languages.japanese)} / 簡体字 ${languageStatusLabel(languages.simplifiedChinese)} / 繁体字 ${languageStatusLabel(languages.traditionalChinese)}`;
+}
+
 function orderedFonts(items) {
   if (!memoIntegration || currentRecommendations.length === 0) return items;
   const ranks = new Map(currentRecommendations.map((result) => [result.font.id, result.rank]));
@@ -1435,7 +1441,7 @@ function renderCards() {
             <li>${openTypeFeatureSummaryText(font)}</li>
             ${officialMetadataHtml(font)}
             ${memoIntegration ? `
-              <li>言語情報: ラテン ${languageStatusLabel(font.languages.latin)} / 日本語 ${languageStatusLabel(font.languages.japanese)} / 簡体字 ${languageStatusLabel(font.languages.simplifiedChinese)} / 繁体字 ${languageStatusLabel(font.languages.traditionalChinese)} / 韓国語 ${languageStatusLabel(font.languages.korean)}</li>
+              <li>${escapeHtml(recommendationLanguageInfoText(font))}</li>
             ` : ''}
           </ul>
         </div>
