@@ -248,45 +248,80 @@ test('Memo Nexusの明示選択は対象Webフォントへ毎回判断を委譲�
   assert.deepEqual(calls, ['noto-sans-jp-web', 'noto-sans-jp-web', 'source-han-sans-web']);
 });
 
-test('loadWebFontは不足Weightだけを取得し、再選択時の状態管理を一元化する', async () => {
+test('loadWebFontは現在の要求を満たすerrorを通信なしで復旧し、不足Weightだけを取得する', async () => {
   const missingWebFontWeights = appFunction('missingWebFontWeights', 'loadWebFont');
   const states = new Map();
   const requests = [];
   const font = { id: 'noto-sans-jp-web', webFont: {} };
-  let active = { status: 'loaded', loadedWeights: new Set([400]), error: null };
-  let requiredWeights = [400, 700];
+  let selectorRenders = 0;
+  let cardRenders = 0;
+  let fail700 = false;
+  let active = { status: 'error', loadedWeights: new Set([400]), error: new Error('700 failed') };
+  let requiredWeights = [400];
   const loadWebFont = appFunctionWithDependencies('loadWebFont', 'requestExplicitWebFont', {
     webFontState: () => active,
     requestedWebFontWeights: () => requiredWeights,
     missingWebFontWeights,
     webFontLoadStates: states,
-    renderSelector: () => {},
-    renderCards: () => {},
-    loadWebFontWeight: async (_font, weight) => { requests.push(weight); }
+    renderSelector: () => { selectorRenders += 1; },
+    renderCards: () => { cardRenders += 1; },
+    loadWebFontWeight: async (_font, weight) => {
+      requests.push(weight);
+      if (fail700 && weight === 700) throw new Error('700 failed');
+    }
   });
 
+  assert.deepEqual(missingWebFontWeights(requiredWeights, active.loadedWeights), []);
+  await loadWebFont(font);
+  active = states.get(font.id);
+  assert.equal(active.status, 'loaded');
+  assert.deepEqual([...active.loadedWeights], [400]);
+  assert.equal(active.error, null);
+  assert.deepEqual(requests, []);
+  assert.equal(selectorRenders, 1);
+  assert.equal(cardRenders, 1);
+
+  const recoveryState = active;
+  assert.deepEqual(missingWebFontWeights(requiredWeights, active.loadedWeights), []);
+  await loadWebFont(font);
+  assert.strictEqual(states.get(font.id), recoveryState);
+  assert.deepEqual(requests, []);
+  assert.equal(selectorRenders, 1);
+  assert.equal(cardRenders, 1);
+
+  requiredWeights = [400, 700];
   assert.deepEqual(missingWebFontWeights(requiredWeights, active.loadedWeights), [700]);
   await loadWebFont(font);
   active = states.get(font.id);
   assert.deepEqual(requests, [700]);
+  assert.equal(active.status, 'loaded');
   assert.deepEqual([...active.loadedWeights], [400, 700]);
-
-  requiredWeights = [400];
-  assert.deepEqual(missingWebFontWeights(requiredWeights, active.loadedWeights), []);
-  await loadWebFont(font);
-  assert.deepEqual(requests, [700]);
+  assert.equal(active.error, null);
 
   const inFlight = Promise.resolve();
   active = { status: 'loading', loadedWeights: new Set([400]), promise: inFlight };
+  const stateBeforeLoading = states.get(font.id);
   assert.strictEqual(loadWebFont(font), inFlight);
+  assert.strictEqual(states.get(font.id), stateBeforeLoading);
   assert.deepEqual(requests, [700]);
 
   active = { status: 'error', loadedWeights: new Set([400]), error: new Error('network') };
   requiredWeights = [400, 700];
+  fail700 = true;
   await loadWebFont(font);
   active = states.get(font.id);
+  assert.equal(active.status, 'error');
   assert.deepEqual(requests, [700, 700]);
+  assert.deepEqual([...active.loadedWeights], [400]);
+  assert.match(active.error.message, /700 failed/);
+
+  fail700 = false;
+  await loadWebFont(font);
+  active = states.get(font.id);
+  assert.deepEqual(requests, [700, 700, 700]);
+  assert.equal(active.status, 'loaded');
   assert.deepEqual([...active.loadedWeights], [400, 700]);
+  assert.equal(active.error, null);
 });
 
 test('明示選択済みのWebフォントだけがWeight変更時の追加読込対象になる', () => {

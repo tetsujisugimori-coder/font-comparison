@@ -1116,7 +1116,19 @@ function loadWebFont(font) {
   const current = webFontState(font);
   if (current.status === 'loading') return current.promise;
   const missingWeights = missingWebFontWeights(requestedWebFontWeights(font), current.loadedWeights);
-  if (!missingWeights.length) return Promise.resolve();
+  if (!missingWeights.length) {
+    if (current.status === 'error') {
+      webFontLoadStates.set(font.id, {
+        status: 'loaded',
+        loadedWeights: new Set(current.loadedWeights),
+        error: null,
+        promise: null
+      });
+      renderSelector();
+      renderCards();
+    }
+    return Promise.resolve();
+  }
 
   const next = { status: 'loading', loadedWeights: new Set(current.loadedWeights), error: null, promise: null };
   webFontLoadStates.set(font.id, next);
