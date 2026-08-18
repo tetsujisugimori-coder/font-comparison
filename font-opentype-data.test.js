@@ -9,6 +9,22 @@ const context = { window: {} };
 vm.runInNewContext(fs.readFileSync('font-opentype-data.js', 'utf8'), context);
 const data = context.window.FontOpenTypeData;
 const noto = data.fonts['noto-sans-jp-web'];
+const webFontIds = [
+  'noto-sans-jp-web', 'noto-serif-jp-web', 'noto-sans-sc-web', 'noto-sans-tc-web',
+  'source-han-sans-web', 'inter-web', 'ibm-plex-sans-web', 'jetbrains-mono-web',
+  'zen-kaku-gothic-new-web', 'shippori-mincho-web'
+];
+
+test('10種類のWebフォントが解析済みOpenTypeデータを持つ', () => {
+  for (const id of webFontIds) {
+    const font = data.fonts[id];
+    assert.equal(font.status, 'analyzed');
+    assert.ok(Array.isArray(font.features));
+    assert.ok(font.fileCount > 0);
+    assert.deepEqual([...font.requestedWeights], [400, 700]);
+    assert.deepEqual([...font.requestedStyles], ['normal']);
+  }
+});
 
 test('Noto Sans JPは指定Google Fonts CSSの全配信ファイル解析結果を持つ', () => {
   assert.equal(noto.status, 'analyzed');
@@ -42,4 +58,12 @@ test('統合タグは重複せず、GSUBとGPOSの両方を保持できる', () 
   assert.equal(new Set(tags).size, tags.length);
   assert.deepEqual(tags, ['ccmp', 'halt', 'kern', 'liga', 'locl', 'palt', 'vert', 'vhal', 'vkrn', 'vpal', 'vrt2']);
   assert.deepEqual([...noto.features.find((feature) => feature.tag === 'vert').tables], ['GSUB', 'GPOS']);
+});
+
+test('Source Han Sans CNは固定リリースURLと解析済みファイル情報を持つ', () => {
+  const sourceHan = data.fonts['source-han-sans-web'];
+  assert.equal(sourceHan.fileCount, 2);
+  assert.match(sourceHan.files[0].url, /source-han-sans@2\.005R/);
+  assert.ok(sourceHan.files.every((file) => /^[0-9a-f]{64}$/.test(file.sha256)));
+  assert.ok(sourceHan.features.length > 0);
 });

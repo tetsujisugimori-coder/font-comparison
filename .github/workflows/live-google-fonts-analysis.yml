@@ -1,10 +1,10 @@
-name: Live Google Fonts analysis
+name: Live web font analysis
 
 on:
   workflow_dispatch:
     inputs:
       run_live_analysis:
-        description: Run live Google Fonts WOFF2 analysis (no commit or push)
+        description: Run live Web font analysis (no commit or push)
         required: true
         type: boolean
         default: false
@@ -13,7 +13,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: noto-sans-jp-live-analysis
+  group: web-font-live-analysis
   cancel-in-progress: false
 
 jobs:
@@ -28,7 +28,7 @@ jobs:
           python-version: '3.12'
       - name: Install Python dependencies
         run: python -m pip install -r requirements-font-analysis.txt
-      - name: Analyze current Google Fonts CSS and WOFF2 files
+      - name: Analyze current Web font CSS, WOFF2, and fixed Source Han files
         run: |
           mkdir artifacts
           cp font-opentype-data.js artifacts/font-opentype-data.js
@@ -38,6 +38,6 @@ jobs:
           git diff --no-index -- font-coverage-data.js artifacts/font-coverage-data.js || true
       - uses: actions/upload-artifact@v4
         with:
-          name: noto-sans-jp-analysis-${{ github.run_id }}
+          name: web-font-analysis-${{ github.run_id }}
           path: artifacts
           if-no-files-found: error

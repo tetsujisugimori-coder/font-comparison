@@ -150,6 +150,46 @@ select {
   border-color: var(--border);
 }
 
+.web-font-badge,
+.web-font-status {
+  font-size: 0.72rem;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.web-font-badge {
+  margin-left: auto;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 3px 5px;
+  color: var(--accent);
+}
+
+.web-font-status {
+  color: var(--muted);
+}
+
+.web-font-status.loading { color: var(--accent); }
+.web-font-status.error { color: #b42318; }
+
+.web-font-notice {
+  margin: 8px 0 0;
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.web-font-notice.loading { color: var(--accent); }
+.web-font-notice.error { color: #b42318; }
+
+.retry-web-font {
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  background: transparent;
+  color: inherit;
+  padding: 2px 7px;
+  cursor: pointer;
+}
+
 .main-area {
   flex: 1;
   min-width: 0;
@@ -415,6 +455,7 @@ select {
 
 .sample-text {
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .unsupported-glyph {

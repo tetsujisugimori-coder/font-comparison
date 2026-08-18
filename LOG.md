@@ -1,3 +1,12 @@
+## 2026-08-18 選択時読み込みWebフォントの追加
+
+- Noto Sans JPの既存カード・メタデータ・Weight / Style表示を共通化し、Noto Serif JP、Noto Sans SC、Noto Sans TC、Source Han Sans、Inter、IBM Plex Sans、JetBrains Mono、Zen Kaku Gothic New、Shippori MinchoをWebフォントとして追加した。
+- 初期表示ではWebフォントのstylesheetやフォント本体を取得せず、選択時に必要なWeightだけをCSS stylesheetとFont Loading API、またはFont Loading APIで読み込む。読み込み中、失敗、再試行、読み込み済みの状態を共通UIで表示し、同じフォントは再取得しない。
+- Google Fonts配信はRegular 400 / Bold 700、Normalを読み込み対象にした。Source Han SansはAdobe公式タグ`2.005R`のSource Han Sans CN SubsetOTF（400 / 700）を読み込み、CJKの地域別字形を日本語・繁体字用と混同しない。
+- Noto Sans SCは簡体字向け、Noto Sans TCは繁体字向けとして表示する。Inter、IBM Plex Sans、JetBrains Monoは主にラテン文字向けで、日本語・中国語はフォールバックされることを明記した。JetBrains Monoは等幅・コード用として扱う。
+- 追加時点では未解析だったcmapとOpenType機能は、後続のPR #13レビュー対応で実際の配信ファイルを解析して更新する。ファミリー全体の提供Weight / Styleは推測せず未確認のままとする。
+- READMEと解析元一覧に、配布元、ライセンス、読み込み方針、対象・注意点を記録した。
+
 ## 2026-08-18 Font FamilyのWeight / Style表示追加
 
 - カード見出しをフォントファミリー名として維持し、属性欄では重複するFont Family行を表示せず、同一ファミリー内の個別フェイス情報であるWeightとStyleだけを表示するようにした。
@@ -320,3 +329,13 @@ Microsoft製品付属7フォントは「Microsoft製品付属（再配布は別�
 
 - 実際の描画フォントは OS やブラウザ、インストール状況に依存する
 - document.fonts.check() は完全な判定ではない
+
+## 2026-08-18 PR #13 Webフォント解析と読込状態のレビュー対応
+
+- `analyze_google_fonts.py`をNoto Sans JP専用から複数フォント用へ一般化した。フォントID、表示名、CSS URL、Weight、Styleを対象ごとに保持し、可変Weight範囲を要求Weightへ展開して未対応形式を黙って無視しない。
+- Noto Sans JPを含むGoogle Fonts 9書体の実配信WOFF2と、固定タグ`2.005R`のSource Han Sans CN SubsetOTFをライブ解析した。全対象の一時出力検証が成功してから、cmapとOpenTypeの生成JSをまとめて置換する。
+- 10書体のcmap、ファイルごとのURL・SHA-256・版・Weight・Style、unicode-range、OpenType機能を記録した。Noto Sans JPは16,657コードポイント・124 WOFF2・11機能で再解析前と同じ結果となり、`张`、`过`、`懒`は未収録のまま確認した。
+- Source Han Sans CNはRegular 8,429,224 bytes、Bold 8,569,308 bytesの固定版OTFを解析した。CN版であり、日本語版・繁体字版ではないことと、選択していないWeightを取得しないことを明記した。
+- カードのWeight / Styleを、読み込み対象、解析ファイルで確認済み、実行時の読み込み成功・失敗、ファミリー全体未確認へ分離した。選択前や失敗時に「読み込み確認済み」と表示しない。
+- Google Fontsの読込完了は`A`だけでなく、解析済みcmapに存在する日本語・英語・簡体字・繁体字・数字・記号の見本文字で確認する。未収録文字は完了条件へ含めない。
+- Memo Nexus連携モードは全カードを表示してもWebフォントを取得せず、利用者が明示選択したWebフォントだけを読み込むようにした。

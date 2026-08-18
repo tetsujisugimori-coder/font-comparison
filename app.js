@@ -169,26 +169,45 @@ function buildOpenTypeProfile(fontId) {
   });
 }
 
+const webFontCatalog = {
+  'noto-sans-jp-web': { displayName: 'Noto Sans JP', family: 'Noto Sans JP', cssFamily: '"Noto Sans JP", sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+JP', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal'] },
+  'noto-serif-jp-web': { displayName: 'Noto Serif JP', family: 'Noto Serif JP', cssFamily: '"Noto Serif JP", serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Serif+JP', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal'] },
+  'noto-sans-sc-web': { displayName: 'Noto Sans SC', family: 'Noto Sans SC', cssFamily: '"Noto Sans SC", sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+SC', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['簡体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal'] },
+  'noto-sans-tc-web': { displayName: 'Noto Sans TC', family: 'Noto Sans TC', cssFamily: '"Noto Sans TC", sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+TC', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['繁体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal'] },
+  'source-han-sans-web': { displayName: 'Source Han Sans', family: 'Source Han Sans CN', cssFamily: '"Source Han Sans CN", sans-serif', sourceUrl: 'https://github.com/adobe-fonts/source-han-sans/tree/2.005R', provider: 'Adobe Source Han Sans 2.005R', license: 'SIL Open Font License 1.1', officialScripts: ['簡体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal'], fontFiles: { 400: 'https://cdn.jsdelivr.net/gh/adobe-fonts/source-han-sans@2.005R/SubsetOTF/CN/SourceHanSansCN-Regular.otf', 700: 'https://cdn.jsdelivr.net/gh/adobe-fonts/source-han-sans@2.005R/SubsetOTF/CN/SourceHanSansCN-Bold.otf' } },
+  'inter-web': { displayName: 'Inter', family: 'Inter', cssFamily: 'Inter, sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Inter', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal'] },
+  'ibm-plex-sans-web': { displayName: 'IBM Plex Sans', family: 'IBM Plex Sans', cssFamily: '"IBM Plex Sans", sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/IBM+Plex+Sans', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal'] },
+  'jetbrains-mono-web': { displayName: 'JetBrains Mono', family: 'JetBrains Mono', cssFamily: '"JetBrains Mono", monospace', cssUrl: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/JetBrains+Mono', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal'] },
+  'zen-kaku-gothic-new-web': { displayName: 'Zen Kaku Gothic New', family: 'Zen Kaku Gothic New', cssFamily: '"Zen Kaku Gothic New", sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Zen+Kaku+Gothic+New', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal'] },
+  'shippori-mincho-web': { displayName: 'Shippori Mincho', family: 'Shippori Mincho', cssFamily: '"Shippori Mincho", serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Shippori+Mincho', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal'] }
+};
+
 function makeFontEntry(base) {
+  const webFont = base.webFont;
   return {
     ...base,
     attributes: {
       ...base.attributes,
       sourceKind: base.sourceType === 'web' ? 'Webフォント' : 'システムフォント',
-      source: base.sourceType === 'web' ? 'Google Fonts' : 'Windows'
+      source: base.sourceType === 'web' ? webFont?.provider || 'Web配布元' : 'Windows'
     },
     sourceInfo: {
       environment: base.sourceType === 'web' ? 'Webブラウザ' : 'Windows',
-      provider: base.sourceType === 'web' ? 'Google Fonts' : 'Microsoft',
-      loadingMethod: base.sourceType === 'web' ? 'Google Fonts CSS API' : 'OS標準フォント',
-      cssHost: base.sourceType === 'web' ? 'fonts.googleapis.com' : '-',
-      fileHost: base.sourceType === 'web' ? 'fonts.gstatic.com' : '-',
-      weights: base.sourceType === 'web' ? ['400', '700'] : ['-'],
+      provider: base.sourceType === 'web' ? webFont?.provider || 'Web配布元' : 'Microsoft',
+      loadingMethod: base.sourceType === 'web' ? (webFont?.cssUrl ? 'CSS stylesheet + Font Loading API' : 'Font Loading API') : 'OS標準フォント',
+      cssHost: base.sourceType === 'web' && webFont?.cssUrl ? 'fonts.googleapis.com' : '-',
+      fileHost: base.sourceType === 'web' && webFont?.cssUrl ? 'fonts.gstatic.com' : (base.sourceType === 'web' ? 'cdn.jsdelivr.net' : '-'),
+      weights: base.sourceType === 'web' ? webFont?.weights?.map(String) || [] : ['-'],
       sourceUrl: base.sourceType === 'web'
-        ? 'https://fonts.google.com/noto/specimen/Noto+Sans+JP'
+        ? webFont?.sourceUrl
         : base.sourceUrl
     }
   };
+}
+
+function makeWebFontEntry(id, details) {
+  const webFont = webFontCatalog[id];
+  return makeFontEntry({ ...details, id, name: webFont.displayName, cssFamily: webFont.cssFamily, sourceType: 'web', fontOrigin: 'Webブラウザ', sourceUrl: webFont.sourceUrl, webFont });
 }
 
 const fonts = [
@@ -306,10 +325,7 @@ const fonts = [
     fontOrigin: 'システム',
     notes: '環境によってはインストールされていない可能性があります。'
   }),
-  makeFontEntry({
-    id: 'noto-sans-jp-web',
-    name: 'Noto Sans JP',
-    cssFamily: '"Noto Sans JP", sans-serif',
+  makeWebFontEntry('noto-sans-jp-web', {
     category: 'サンセリフ / プロポーショナル',
     impression: ['読みやすい', '汎用', 'Web配信向け'],
     uses: ['本文', 'UI', '説明文'],
@@ -321,12 +337,18 @@ const fonts = [
       features: [],
       openType: makeOpenTypeProfile(false, [])
     },
-    sourceType: 'web',
-    fontOrigin: 'Webブラウザ',
-    sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+JP',
     openTypeAnalysisState: 'not-analyzed',
     notes: 'Web配信フォント向けに同じ表示形式でOpenType機能を確認します。'
   }),
+  makeWebFontEntry('noto-serif-jp-web', { category: '明朝体 / セリフ', impression: ['端正', '落ち着いた', '本文向け'], uses: ['日本語本文', '見出し'], attributes: { supports: ['基本ラテン対応', '日本語対応', 'Webフォント'], width: 'プロポーショナル', classification: '明朝体 / セリフ', environment: 'Webブラウザ', features: [], openType: makeOpenTypeProfile(false, []) }, categoryType: 'serif', recommendedFor: ['body', 'heading'], languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }, notes: '日本語の明朝・セリフ系として選択時に読み込みます。' }),
+  makeWebFontEntry('noto-sans-sc-web', { category: 'ゴシック体 / サンセリフ', impression: ['明快', '簡体字向け', 'Web配信向け'], uses: ['簡体字本文', 'UI'], attributes: { supports: ['基本ラテン対応', '簡体字対応', 'Webフォント'], width: 'プロポーショナル', classification: 'ゴシック体 / サンセリフ', environment: 'Webブラウザ', features: [], openType: makeOpenTypeProfile(false, []) }, categoryType: 'sans-serif', recommendedFor: ['body'], languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'supported', traditionalChinese: 'unknown', korean: 'unknown' }, notes: '簡体字向けです。繁体字や日本語の字形は別フォントへフォールバックする場合があります。' }),
+  makeWebFontEntry('noto-sans-tc-web', { category: 'ゴシック体 / サンセリフ', impression: ['明快', '繁体字向け', 'Web配信向け'], uses: ['繁体字本文', 'UI'], attributes: { supports: ['基本ラテン対応', '繁体字対応', 'Webフォント'], width: 'プロポーショナル', classification: 'ゴシック体 / サンセリフ', environment: 'Webブラウザ', features: [], openType: makeOpenTypeProfile(false, []) }, categoryType: 'sans-serif', recommendedFor: ['body'], languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'supported', korean: 'unknown' }, notes: '繁体字向けです。簡体字や日本語の字形は別フォントへフォールバックする場合があります。' }),
+  makeWebFontEntry('source-han-sans-web', { category: 'ゴシック体 / サンセリフ', impression: ['CJK', '簡体字字形', '実用的'], uses: ['簡体字本文', 'UI'], attributes: { supports: ['基本ラテン対応', '簡体字対応', 'Webフォント'], width: 'プロポーショナル', classification: 'ゴシック体 / サンセリフ', environment: 'Webブラウザ', features: [], openType: makeOpenTypeProfile(false, []) }, categoryType: 'sans-serif', recommendedFor: ['body'], languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'supported', traditionalChinese: 'unknown', korean: 'unknown' }, notes: 'Adobe公式releaseのSource Han Sans CNを選択時に読み込みます。CJKには地域別字形があり、日本語・繁体字用とは区別します。' }),
+  makeWebFontEntry('inter-web', { category: 'サンセリフ / プロポーショナル', impression: ['現代的', '可読性', 'UI向け'], uses: ['欧文UI', '欧文本文'], attributes: { supports: ['基本ラテン対応', 'Webフォント'], width: 'プロポーショナル', classification: 'サンセリフ', environment: 'Webブラウザ', features: [], openType: makeOpenTypeProfile(false, []) }, categoryType: 'sans-serif', recommendedFor: ['body', 'heading'], languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }, notes: '主にラテン文字向けです。日本語・中国語は別フォントへフォールバックします。' }),
+  makeWebFontEntry('ibm-plex-sans-web', { category: 'サンセリフ / プロポーショナル', impression: ['技術的', '明快', '汎用'], uses: ['欧文UI', '欧文本文'], attributes: { supports: ['基本ラテン対応', 'Webフォント'], width: 'プロポーショナル', classification: 'サンセリフ', environment: 'Webブラウザ', features: [], openType: makeOpenTypeProfile(false, []) }, categoryType: 'sans-serif', recommendedFor: ['body', 'heading'], languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }, notes: '主にラテン文字向けです。日本語・中国語は別フォントへフォールバックします。' }),
+  makeWebFontEntry('jetbrains-mono-web', { category: 'サンセリフ / 等幅', impression: ['明快', 'コード向け', '等幅'], uses: ['コード', '数字表示'], attributes: { supports: ['基本ラテン対応', '等幅', 'Webフォント'], width: '等幅', classification: 'サンセリフ寄り', environment: 'Webブラウザ', features: [], openType: makeOpenTypeProfile(false, []) }, categoryType: 'monospace', recommendedFor: ['code'], languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }, notes: '等幅フォントとしてコード用サンプルにも適用します。日本語・中国語は別フォントへフォールバックします。' }),
+  makeWebFontEntry('zen-kaku-gothic-new-web', { category: 'ゴシック体 / サンセリフ', impression: ['端正', '日本語向け', '軽快'], uses: ['日本語本文', 'UI'], attributes: { supports: ['基本ラテン対応', '日本語対応', 'Webフォント'], width: 'プロポーショナル', classification: 'ゴシック体 / サンセリフ', environment: 'Webブラウザ', features: [], openType: makeOpenTypeProfile(false, []) }, categoryType: 'sans-serif', recommendedFor: ['body', 'heading'], languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }, notes: '日本語ゴシックとして選択時に読み込みます。' }),
+  makeWebFontEntry('shippori-mincho-web', { category: '明朝体 / セリフ', impression: ['上品', '日本語向け', '本文向け'], uses: ['日本語本文', '見出し'], attributes: { supports: ['基本ラテン対応', '日本語対応', 'Webフォント'], width: 'プロポーショナル', classification: '明朝体 / セリフ', environment: 'Webブラウザ', features: [], openType: makeOpenTypeProfile(false, []) }, categoryType: 'serif', recommendedFor: ['body', 'heading'], languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }, notes: '日本語の明朝・セリフ系として選択時に読み込みます。' }),
   makeFontEntry({
     id: 'courier-new',
     name: 'Courier New',
@@ -555,6 +577,25 @@ const officialFontMetadata = {
     sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+JP'
   }
 };
+
+Object.assign(officialFontMetadata, Object.fromEntries(Object.entries(webFontCatalog).map(([id, webFont]) => [id, {
+  delivery: {
+    environment: 'Webブラウザ',
+    provider: webFont.provider,
+    loadingMethod: webFont.cssUrl ? '選択時にCSS stylesheet + Font Loading API' : '選択時にFont Loading API',
+    cssHost: webFont.cssUrl ? 'fonts.googleapis.com' : '-',
+    fileHost: webFont.cssUrl ? 'fonts.gstatic.com' : 'cdn.jsdelivr.net',
+    weights: webFont.weights.map(String),
+    details: '未選択時は読み込まず、選択後に必要なウェイトだけを取得します。'
+  },
+  fontFaceMetadata: {
+    configuredWeights: webFont.weights,
+    configuredStyles: webFont.styles.map((value) => ({ value, native: true }))
+  },
+  officialScripts: webFont.officialScripts,
+  license: webFont.license,
+  sourceUrl: webFont.sourceUrl
+}])));
 
 const openTypeData = window.FontOpenTypeData || { fonts: {} };
 const fontFaceData = window.FontFaceData || { fonts: {} };
@@ -853,9 +894,9 @@ function createFontFaceProfile(font) {
   return window.FontMetadata?.createFontFaceProfile({
     family: metadata.family || font.name,
     availableWeights: metadata.availableWeights,
-    loadedWeights: metadata.loadedWeights || font.delivery?.weights,
+    loadedWeights: metadata.loadedWeights || (font.sourceType === 'web' ? [] : font.delivery?.weights),
     availableStyles: metadata.availableStyles,
-    loadedStyles: metadata.loadedStyles,
+    loadedStyles: metadata.loadedStyles || (font.sourceType === 'web' ? [] : metadata.loadedStyles),
     syntheticStyles: metadata.syntheticStyles,
     verification: metadata.verification
   }) || {
@@ -870,6 +911,7 @@ function createFontFaceProfile(font) {
 }
 
 function fontVariantInfoRows(font) {
+  if (font.webFont) return webFontVariantInfoRows(font);
   const profile = font.attributes?.fontFace || createFontFaceProfile(font);
   const weight = window.FontMetadata?.formatWeightSummary(profile) || '未確認';
   const style = window.FontMetadata?.formatStyleSummary(profile) || '未確認';
@@ -943,7 +985,7 @@ function createCoverageLegend(font, unsupportedCount) {
   if (coverage.status !== 'analyzed') {
     const unknown = document.createElement('p');
     unknown.className = 'coverage-legend coverage-unknown';
-    unknown.textContent = '収録文字情報は未確認です。未収録とは判定していません。';
+    unknown.textContent = '収録文字情報は未確認です。通常濃度の文字も収録済みとは判定していません。';
     return unknown;
   }
   if (unsupportedCount === 0) return null;
@@ -951,6 +993,183 @@ function createCoverageLegend(font, unsupportedCount) {
   legend.className = 'coverage-legend';
   legend.textContent = '薄い文字は、解析した対象フォントに未収録です。ブラウザが別のフォントによる代替表示を試みます。';
   return legend;
+}
+
+function formatWebFontWeights(weights) {
+  return weights.map((weight) => window.FontMetadata?.formatWeightSummary({ availableWeights: [weight] }).replace(/（.*$/, '') || `Weight ${weight}`).join(' / ');
+}
+
+function webFontVariantInfoRows(font) {
+  const config = font.webFont;
+  const coverage = coverageMetadata(font);
+  const runtime = webFontState(font);
+  const configuredWeights = formatWebFontWeights(config.weights);
+  const analyzedWeights = coverage.status === 'analyzed' ? formatWebFontWeights(coverage.requestedWeights || []) : '未確認';
+  const successfulWeights = formatWebFontWeights([...runtime.loadedWeights]);
+  const requestedNow = formatWebFontWeights(requestedWebFontWeights(font));
+  const runtimeWeight = runtime.status === 'loading'
+    ? `読み込み中: ${requestedNow}`
+    : runtime.status === 'loaded'
+      ? `読み込み成功: ${successfulWeights || 'なし'}`
+      : runtime.status === 'error'
+        ? `読み込み失敗: ${requestedNow}`
+        : '実行時の読み込み: 未実行';
+  const styles = config.styles.map((style) => style === 'normal' ? 'Normal' : style).join(' / ');
+  return `
+    <li>Weight: 読み込み対象: ${escapeHtml(configuredWeights)}</li>
+    <li>Weight: 解析ファイルで確認: ${escapeHtml(analyzedWeights)}</li>
+    <li>Weight: ${escapeHtml(runtimeWeight)}</li>
+    <li>Style: 読み込み対象: ${escapeHtml(styles)} / 実行時成功: ${runtime.status === 'loaded' ? escapeHtml(styles) : '未確認'} / ファミリー全体: 未確認</li>
+  `;
+}
+
+const webFontLoadStates = new Map();
+const webFontStylesheetPromises = new Map();
+const webFontFacePromises = new Map();
+const explicitlyRequestedWebFonts = new Set();
+
+function webFontState(font) {
+  return webFontLoadStates.get(font.id) || { status: 'idle', loadedWeights: new Set(), error: null };
+}
+
+function webFontStatusText(font) {
+  if (!font.webFont) return '';
+  const current = webFontState(font);
+  if (current.status === 'loading') return '読み込み中';
+  if (current.status === 'loaded') return '読込済み';
+  if (current.status === 'error') return '読込失敗';
+  return '選択時に読込';
+}
+
+function loadStylesheet(url) {
+  if (webFontStylesheetPromises.has(url)) return webFontStylesheetPromises.get(url);
+  const promise = new Promise((resolve, reject) => {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = url;
+    link.dataset.webFontStylesheet = url;
+    link.onload = () => resolve();
+    link.onerror = () => {
+      link.remove();
+      webFontStylesheetPromises.delete(url);
+      reject(new Error('配布元のCSSを取得できませんでした。'));
+    };
+    document.head.appendChild(link);
+  });
+  webFontStylesheetPromises.set(url, promise);
+  return promise;
+}
+
+function loadSourceHanFace(font, weight) {
+  const key = `${font.id}:${weight}`;
+  if (webFontFacePromises.has(key)) return webFontFacePromises.get(key);
+  const url = font.webFont.fontFiles?.[weight];
+  if (!url) return Promise.resolve();
+  const promise = new FontFace(font.webFont.family, `url(${url}) format('opentype')`, { weight: String(weight), style: 'normal', display: 'swap' })
+    .load()
+    .then((face) => document.fonts.add(face))
+    .catch((error) => {
+      webFontFacePromises.delete(key);
+      throw error;
+    });
+  webFontFacePromises.set(key, promise);
+  return promise;
+}
+
+async function loadWebFontWeight(font, weight) {
+  const config = font.webFont;
+  if (!config.weights.includes(weight)) return;
+  if (config.cssUrl) {
+    await loadStylesheet(config.cssUrl);
+    const loadedFaces = await document.fonts.load(`${weight} 1em "${config.family}"`, coverageLoadText(font));
+    if (!loadedFaces.length) throw new Error(`指定したFontFaceを確認できませんでした: ${font.name} ${weight}`);
+    return;
+  }
+  await loadSourceHanFace(font, weight);
+}
+
+function requestedWebFontWeights(font) {
+  const values = new Set([400, state.fontWeight]);
+  return [...values].filter((weight) => font.webFont.weights.includes(weight));
+}
+
+function coverageLoadText(font) {
+  const sampleText = samples.normal.map((section) => section.text).join('');
+  const characters = [];
+  const seen = new Set();
+  for (const character of sampleText) {
+    const codepoint = character.codePointAt(0);
+    if (seen.has(codepoint) || coverageApi.codepointStatus(font.id, codepoint, coverageData) !== 'supported') continue;
+    seen.add(codepoint);
+    characters.push(character);
+  }
+  if (!characters.length) throw new Error(`解析済み見本文字がありません: ${font.name}`);
+  return characters.join('');
+}
+
+function missingWebFontWeights(requestedWeights, loadedWeights) {
+  return requestedWeights.filter((weight) => !loadedWeights.has(weight));
+}
+
+function loadWebFont(font) {
+  if (!font.webFont) return Promise.resolve();
+  const current = webFontState(font);
+  if (current.status === 'loading') return current.promise;
+  const missingWeights = missingWebFontWeights(requestedWebFontWeights(font), current.loadedWeights);
+  if (!missingWeights.length) {
+    if (current.status === 'error') {
+      webFontLoadStates.set(font.id, {
+        status: 'loaded',
+        loadedWeights: new Set(current.loadedWeights),
+        error: null,
+        promise: null
+      });
+      renderSelector();
+      renderCards();
+    }
+    return Promise.resolve();
+  }
+
+  const next = { status: 'loading', loadedWeights: new Set(current.loadedWeights), error: null, promise: null };
+  webFontLoadStates.set(font.id, next);
+  renderSelector();
+  renderCards();
+  next.promise = Promise.all(missingWeights.map(async (weight) => {
+    await loadWebFontWeight(font, weight);
+    next.loadedWeights.add(weight);
+  }))
+    .then(() => { next.status = 'loaded'; })
+    .catch((error) => { next.status = 'error'; next.error = error; })
+    .finally(() => { renderSelector(); renderCards(); });
+  return next.promise;
+}
+
+function requestExplicitWebFont(font, requestedFonts, load) {
+  if (!font.webFont) return { isWebFont: false };
+  requestedFonts.add(font.id);
+  return { isWebFont: true, promise: load(font) };
+}
+
+function explicitlyRequestWebFont(font) {
+  return requestExplicitWebFont(font, explicitlyRequestedWebFonts, loadWebFont);
+}
+
+function requestWebFontsForSelectedIds(fontList, selectedIds, requestedFonts, load) {
+  fontList
+    .filter((font) => font.webFont && selectedIds.includes(font.id) && requestedFonts.has(font.id))
+    .forEach((font) => { load(font); });
+}
+
+function requestSelectedWebFonts() {
+  requestWebFontsForSelectedIds(fonts, state.selectedIds, explicitlyRequestedWebFonts, loadWebFont);
+}
+
+function webFontLoadNotice(font) {
+  if (!font.webFont) return '';
+  const current = webFontState(font);
+  if (current.status === 'loading') return '<p class="web-font-notice loading">このWebフォントを読み込み中です。</p>';
+  if (current.status === 'error') return '<p class="web-font-notice error">Webフォントを読み込めませんでした。ネットワークまたは配布元を確認し、再試行してください。 <button type="button" class="retry-web-font">再試行</button></p>';
+  return '';
 }
 
 function renderSelector() {
@@ -961,6 +1180,7 @@ function renderSelector() {
     label.innerHTML = `
       <input type="checkbox" value="${escapeHtml(font.id)}" ${state.selectedIds.includes(font.id) ? 'checked' : ''} />
       <span>${escapeHtml(font.name)}</span>
+      ${font.webFont ? `<span class="web-font-badge">Web</span><span class="web-font-status ${webFontState(font).status}">${webFontStatusText(font)}</span>` : ''}
     `;
     label.querySelector('input').addEventListener('change', (event) => {
       if (event.target.checked) {
@@ -971,6 +1191,7 @@ function renderSelector() {
         state.selectedIds = state.selectedIds.filter((id) => id !== font.id);
       }
       renderCards();
+      if (event.target.checked) explicitlyRequestWebFont(font);
     });
     selector.appendChild(label);
   });
@@ -1012,6 +1233,7 @@ function renderCards() {
       <div class="font-card-header">
         <h3 class="font-card-name">${escapeHtml(font.name)}</h3>
         <p class="font-card-category">${escapeHtml(font.category)}</p>
+        ${webFontLoadNotice(font)}
       </div>
       <div class="sample-area"></div>
       <div class="card-footer">
@@ -1064,9 +1286,13 @@ function renderCards() {
 
     card.querySelector('.select-memo-font')?.addEventListener('click', () => {
       selectedMemoFontId = font.id;
-      memoNexusStatus.textContent = `${font.name}を選択しました。内容を確認してMemo Nexusへ戻れます。`;
+      const request = explicitlyRequestWebFont(font);
+      memoNexusStatus.textContent = request.isWebFont
+        ? `${font.name}を選択しました。Webフォントの読込状態はカードに表示します。`
+        : `${font.name}を選択しました。内容を確認してMemo Nexusへ戻れます。`;
       renderCards();
     });
+    card.querySelector('.retry-web-font')?.addEventListener('click', () => loadWebFont(font));
     const openTypeButton = card.querySelector('.open-type-feature-button');
     if (openTypeButton) {
       openTypeButton.addEventListener('click', () => {
@@ -1189,6 +1415,7 @@ function bindControls() {
   document.getElementById('fontWeightSelect').addEventListener('change', (event) => {
     state.fontWeight = Number(event.target.value);
     renderCards();
+    requestSelectedWebFonts();
   });
 
   document.getElementById('lineHeightRange').addEventListener('input', (event) => {
@@ -1217,8 +1444,10 @@ function bindControls() {
 
   document.getElementById('selectAllButton').addEventListener('click', () => {
     state.selectedIds = fonts.map((font) => font.id);
+    fonts.filter((font) => font.webFont).forEach((font) => explicitlyRequestedWebFonts.add(font.id));
     renderSelector();
     renderCards();
+    requestSelectedWebFonts();
   });
 
   document.getElementById('clearAllButton').addEventListener('click', () => {
@@ -1252,3 +1481,4 @@ bindControls();
 bindOpenTypeDialogEvents();
 updateControlLabels();
 renderCards();
+requestSelectedWebFonts();

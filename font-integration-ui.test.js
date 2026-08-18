@@ -11,6 +11,22 @@ const fontFaceDataSource = fs.readFileSync('font-face-data.js', 'utf8');
 const katexData = fs.readFileSync('katex-data.js', 'utf8');
 const katexPage = fs.readFileSync('katex-page.js', 'utf8');
 
+function appFunction(name, nextName) {
+  const start = app.indexOf(`function ${name}(`);
+  const end = app.indexOf(`\nfunction ${nextName}(`, start);
+  assert.notEqual(start, -1, `${name} must exist`);
+  assert.notEqual(end, -1, `${nextName} must follow ${name}`);
+  return new Function(`${app.slice(start, end)}\nreturn ${name};`)();
+}
+
+function appFunctionWithDependencies(name, nextName, dependencies) {
+  const start = app.indexOf(`function ${name}(`);
+  const end = app.indexOf(`\nfunction ${nextName}(`, start);
+  assert.notEqual(start, -1, `${name} must exist`);
+  assert.notEqual(end, -1, `${nextName} must follow ${name}`);
+  return new Function(...Object.keys(dependencies), `${app.slice(start, end)}\nreturn ${name};`)(...Object.values(dependencies));
+}
+
 test('Memo Nexus連携パネルは通常起動時に非表示で必要な操作を持つ', () => {
   assert.match(html, /id="memoNexusPanel"[^>]*hidden/);
   assert.match(html, /id="returnToMemoButton"[^>]*>Memo Nexusで使用/);
@@ -38,7 +54,7 @@ test('未確認情報を未対応と断定せず公式メタデータと分け�
   assert.match(app, /languages: \{ latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' \}/);
   assert.match(app, /SIL Open Font License 1\.1/);
   assert.match(app, /Microsoft製品付属（再配布は別途ライセンス確認）/);
-  assert.match(app, /収録文字情報は未確認です。未収録とは判定していません。/);
+  assert.match(app, /収録文字情報は未確認です。通常濃度の文字も収録済みとは判定していません。/);
   assert.match(app, /公式情報:/);
 });
 
@@ -117,7 +133,8 @@ test('Webフォントも同じカード構造でOpenType情報を扱う', () => 
   assert.match(app, /fontOrigin: 'Webブラウザ'/);
   assert.match(app, /sourceType: 'system'/);
   assert.match(app, /font\.attributes\.sourceKind/);
-  assert.match(html, /fonts\.googleapis\.com/);
+  assert.match(app, /const webFontCatalog =/);
+  assert.match(app, /noto-sans-jp-web/);
 });
 
 test('WeightとStyleは全カード共通の個別フェイス情報として表示し、重複するFont Family行は出力しない', () => {
@@ -129,9 +146,43 @@ test('WeightとStyleは全カード共通の個別フェイス情報として表
   assert.doesNotMatch(app, /Font Family:/);
   assert.match(app, /const fontFaceData = window\.FontFaceData/);
   assert.match(app, /const analyzed = fontFaceData\.fonts\?\.\[font\.id\]/);
-  assert.match(app, /loadedWeights: metadata\.loadedWeights \|\| font\.delivery\?\.weights/);
-  assert.match(app, /loadedStyles: \[\{ value: 'normal', native: true \}\]/);
+  assert.match(app, /configuredWeights: webFont\.weights/);
+  assert.match(app, /function webFontVariantInfoRows\(font\)/);
   assert.doesNotMatch(app, /noto-sans-jp-web[\s\S]*?if \(font\.id === 'noto-sans-jp-web'\)/);
+});
+
+test('追加Webフォントは共通カタログで定義し、初期HTMLでは先行読込しない', () => {
+  for (const id of ['noto-serif-jp-web', 'noto-sans-sc-web', 'noto-sans-tc-web', 'source-han-sans-web', 'inter-web', 'ibm-plex-sans-web', 'jetbrains-mono-web', 'zen-kaku-gothic-new-web', 'shippori-mincho-web']) {
+    assert.match(app, new RegExp(`'${id}'`));
+  }
+  assert.doesNotMatch(html, /family=Noto\+Sans\+JP/);
+  assert.match(app, /function loadWebFont\(font/);
+  assert.match(app, /document\.createElement\('link'\)/);
+  assert.match(app, /new FontFace\(font\.webFont\.family/);
+  assert.match(app, /webFontLoadStates/);
+});
+
+test('Webフォントの読み込み中・失敗・再試行と、選択済みフォントだけの読込を表示する', () => {
+  assert.match(app, /読み込み中/);
+  assert.match(app, /読込失敗/);
+  assert.match(app, /再試行/);
+  assert.match(app, /requestSelectedWebFonts/);
+  assert.match(app, /if \(event\.target\.checked\) explicitlyRequestWebFont\(font\)/);
+  assert.match(app, /web-font-status/);
+  assert.match(css, /\.web-font-notice/);
+  assert.match(app, /webFontFacePromises\.delete\(key\)/);
+  assert.match(app, /explicitlyRequestedWebFonts/);
+  assert.match(app, /coverageLoadText\(font\)/);
+  assert.doesNotMatch(app, /document\.fonts\.load\([^\n]+, 'A'\)/);
+});
+
+test('Webフォントの言語別注意とSource Han Sans CNの地域別字形を明示する', () => {
+  assert.match(app, /簡体字向け/);
+  assert.match(app, /繁体字向け/);
+  assert.match(app, /Source Han Sans CN/);
+  assert.match(app, /地域別字形/);
+  assert.match(app, /日本語・中国語は別フォントへフォールバック/);
+  assert.match(app, /JetBrains Mono/);
 });
 
 test('Windows実フォントの生成データはWeightを順序付きで集約し、TTC faceIndexと専用Italicを保持する', () => {
@@ -156,6 +207,154 @@ test('Weight・Style情報は既存の属性リストと狭幅対応を使い、
   assert.match(html, /font-face-data\.js[\s\S]*app\.js/);
   assert.match(fontFaceDataSource, /この検証環境（Windows）で確認済み/);
   assert.match(fs.readFileSync('font-metadata.js', 'utf8'), /このアプリで読み込み確認済み/);
+});
+
+test('Webフォントは解析済みの見本文字で読込を確認し、実行時成功だけを表示する', () => {
+  assert.match(app, /coverageApi\.codepointStatus\(font\.id, codepoint, coverageData\) !== 'supported'/);
+  assert.match(app, /読み込み対象:/);
+  assert.match(app, /解析ファイルで確認:/);
+  assert.match(app, /読み込み成功:/);
+  assert.match(app, /読み込み失敗:/);
+  assert.match(app, /ファミリー全体: 未確認/);
+  assert.doesNotMatch(app, /loadedWeights: webFont\.weights/);
+});
+
+test('Memo Nexusの全カード表示はWebフォントの一括取得を誘発しない', () => {
+  assert.match(app, /state\.selectedIds = fonts\.map/);
+  assert.match(app, /requestWebFontsForSelectedIds\(fonts, state\.selectedIds, explicitlyRequestedWebFonts, loadWebFont\)/);
+});
+
+test('Memo Nexusの明示選択は対象Webフォントへ毎回判断を委譲し、システムフォントは要求しない', () => {
+  const requestExplicitWebFont = appFunction('requestExplicitWebFont', 'explicitlyRequestWebFont');
+  const requested = new Set();
+  const calls = [];
+  const load = (font) => {
+    calls.push(font.id);
+    return Promise.resolve();
+  };
+  const notoSansJp = { id: 'noto-sans-jp-web', webFont: {} };
+  const sourceHan = { id: 'source-han-sans-web', webFont: {} };
+  const system = { id: 'segoe-ui' };
+
+  assert.deepEqual(requestExplicitWebFont(notoSansJp, requested, load).isWebFont, true);
+  assert.deepEqual([...requested], ['noto-sans-jp-web']);
+  assert.deepEqual(calls, ['noto-sans-jp-web']);
+  assert.deepEqual(requestExplicitWebFont(notoSansJp, requested, load).isWebFont, true);
+  assert.deepEqual(calls, ['noto-sans-jp-web', 'noto-sans-jp-web']);
+  assert.equal(requestExplicitWebFont(system, requested, load).isWebFont, false);
+  assert.deepEqual(calls, ['noto-sans-jp-web', 'noto-sans-jp-web']);
+  requestExplicitWebFont(sourceHan, requested, load);
+  assert.deepEqual([...requested], ['noto-sans-jp-web', 'source-han-sans-web']);
+  assert.deepEqual(calls, ['noto-sans-jp-web', 'noto-sans-jp-web', 'source-han-sans-web']);
+});
+
+test('loadWebFontは現在の要求を満たすerrorを通信なしで復旧し、不足Weightだけを取得する', async () => {
+  const missingWebFontWeights = appFunction('missingWebFontWeights', 'loadWebFont');
+  const states = new Map();
+  const requests = [];
+  const font = { id: 'noto-sans-jp-web', webFont: {} };
+  let selectorRenders = 0;
+  let cardRenders = 0;
+  let fail700 = false;
+  let active = { status: 'error', loadedWeights: new Set([400]), error: new Error('700 failed') };
+  let requiredWeights = [400];
+  const loadWebFont = appFunctionWithDependencies('loadWebFont', 'requestExplicitWebFont', {
+    webFontState: () => active,
+    requestedWebFontWeights: () => requiredWeights,
+    missingWebFontWeights,
+    webFontLoadStates: states,
+    renderSelector: () => { selectorRenders += 1; },
+    renderCards: () => { cardRenders += 1; },
+    loadWebFontWeight: async (_font, weight) => {
+      requests.push(weight);
+      if (fail700 && weight === 700) throw new Error('700 failed');
+    }
+  });
+
+  assert.deepEqual(missingWebFontWeights(requiredWeights, active.loadedWeights), []);
+  await loadWebFont(font);
+  active = states.get(font.id);
+  assert.equal(active.status, 'loaded');
+  assert.deepEqual([...active.loadedWeights], [400]);
+  assert.equal(active.error, null);
+  assert.deepEqual(requests, []);
+  assert.equal(selectorRenders, 1);
+  assert.equal(cardRenders, 1);
+
+  const recoveryState = active;
+  assert.deepEqual(missingWebFontWeights(requiredWeights, active.loadedWeights), []);
+  await loadWebFont(font);
+  assert.strictEqual(states.get(font.id), recoveryState);
+  assert.deepEqual(requests, []);
+  assert.equal(selectorRenders, 1);
+  assert.equal(cardRenders, 1);
+
+  requiredWeights = [400, 700];
+  assert.deepEqual(missingWebFontWeights(requiredWeights, active.loadedWeights), [700]);
+  await loadWebFont(font);
+  active = states.get(font.id);
+  assert.deepEqual(requests, [700]);
+  assert.equal(active.status, 'loaded');
+  assert.deepEqual([...active.loadedWeights], [400, 700]);
+  assert.equal(active.error, null);
+
+  const inFlight = Promise.resolve();
+  active = { status: 'loading', loadedWeights: new Set([400]), promise: inFlight };
+  const stateBeforeLoading = states.get(font.id);
+  assert.strictEqual(loadWebFont(font), inFlight);
+  assert.strictEqual(states.get(font.id), stateBeforeLoading);
+  assert.deepEqual(requests, [700]);
+
+  active = { status: 'error', loadedWeights: new Set([400]), error: new Error('network') };
+  requiredWeights = [400, 700];
+  fail700 = true;
+  await loadWebFont(font);
+  active = states.get(font.id);
+  assert.equal(active.status, 'error');
+  assert.deepEqual(requests, [700, 700]);
+  assert.deepEqual([...active.loadedWeights], [400]);
+  assert.match(active.error.message, /700 failed/);
+
+  fail700 = false;
+  await loadWebFont(font);
+  active = states.get(font.id);
+  assert.deepEqual(requests, [700, 700, 700]);
+  assert.equal(active.status, 'loaded');
+  assert.deepEqual([...active.loadedWeights], [400, 700]);
+  assert.equal(active.error, null);
+});
+
+test('明示選択済みのWebフォントだけがWeight変更時の追加読込対象になる', () => {
+  const requestWebFontsForSelectedIds = appFunction('requestWebFontsForSelectedIds', 'requestSelectedWebFonts');
+  const fonts = [
+    { id: 'noto-sans-jp-web', webFont: {} },
+    { id: 'source-han-sans-web', webFont: {} },
+    { id: 'segoe-ui' }
+  ];
+  const calls = [];
+  requestWebFontsForSelectedIds(
+    fonts,
+    fonts.map((font) => font.id),
+    new Set(),
+    (font) => calls.push(font.id)
+  );
+  assert.deepEqual(calls, []);
+  requestWebFontsForSelectedIds(
+    fonts,
+    fonts.map((font) => font.id),
+    new Set(['noto-sans-jp-web']),
+    (font) => calls.push(font.id)
+  );
+  assert.deepEqual(calls, ['noto-sans-jp-web']);
+  assert.match(app, /function requestedWebFontWeights\(font\)[\s\S]*new Set\(\[400, state\.fontWeight\]\)/);
+  assert.match(app, /missingWebFontWeights\(requestedWebFontWeights\(font\), current\.loadedWeights\)/);
+});
+
+test('Memo Nexusの選択操作は共通の明示読込処理を通し、読込状態をカードへ案内する', () => {
+  assert.match(app, /const request = explicitlyRequestWebFont\(font\);/);
+  assert.match(app, /Webフォントの読込状態はカードに表示します。/);
+  assert.match(app, /if \(event\.target\.checked\) explicitlyRequestWebFont\(font\);/);
+  assert.match(app, /requestWebFontsForSelectedIds\(fonts, state\.selectedIds, explicitlyRequestedWebFonts, loadWebFont\)/);
 });
 
 test('OpenType機能ダイアログにはボタン、一覧、説明欄の要素があり、同一ダイアログを再利用する', () => {
