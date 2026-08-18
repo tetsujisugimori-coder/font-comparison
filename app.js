@@ -171,16 +171,46 @@ function buildOpenTypeProfile(fontId) {
 }
 
 const webFontCatalog = {
-  'noto-sans-jp-web': { displayName: 'Noto Sans JP', family: 'Noto Sans JP', cssFamily: '"Noto Sans JP", sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+JP', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal'] },
-  'noto-serif-jp-web': { displayName: 'Noto Serif JP', family: 'Noto Serif JP', cssFamily: '"Noto Serif JP", serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Serif+JP', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal'] },
-  'noto-sans-sc-web': { displayName: 'Noto Sans SC', family: 'Noto Sans SC', cssFamily: '"Noto Sans SC", sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+SC', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['簡体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal'] },
-  'noto-sans-tc-web': { displayName: 'Noto Sans TC', family: 'Noto Sans TC', cssFamily: '"Noto Sans TC", sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+TC', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['繁体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal'] },
-  'source-han-sans-web': { displayName: 'Source Han Sans', family: 'Source Han Sans CN', cssFamily: '"Source Han Sans CN", sans-serif', sourceUrl: 'https://github.com/adobe-fonts/source-han-sans/tree/2.005R', provider: 'Adobe Source Han Sans 2.005R', license: 'SIL Open Font License 1.1', officialScripts: ['簡体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal'], fontFiles: { 400: 'https://cdn.jsdelivr.net/gh/adobe-fonts/source-han-sans@2.005R/SubsetOTF/CN/SourceHanSansCN-Regular.otf', 700: 'https://cdn.jsdelivr.net/gh/adobe-fonts/source-han-sans@2.005R/SubsetOTF/CN/SourceHanSansCN-Bold.otf' } },
-  'inter-web': { displayName: 'Inter', family: 'Inter', cssFamily: 'Inter, sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Inter', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal'] },
-  'ibm-plex-sans-web': { displayName: 'IBM Plex Sans', family: 'IBM Plex Sans', cssFamily: '"IBM Plex Sans", sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/IBM+Plex+Sans', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal'] },
-  'jetbrains-mono-web': { displayName: 'JetBrains Mono', family: 'JetBrains Mono', cssFamily: '"JetBrains Mono", monospace', cssUrl: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/JetBrains+Mono', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal'] },
-  'zen-kaku-gothic-new-web': { displayName: 'Zen Kaku Gothic New', family: 'Zen Kaku Gothic New', cssFamily: '"Zen Kaku Gothic New", sans-serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Zen+Kaku+Gothic+New', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal'] },
-  'shippori-mincho-web': { displayName: 'Shippori Mincho', family: 'Shippori Mincho', cssFamily: '"Shippori Mincho", serif', cssUrl: 'https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Shippori+Mincho', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal'] }
+  'noto-sans-jp-web': {
+    displayName: 'Noto Sans JP', family: 'Noto Sans JP', cssFamily: '"Noto Sans JP", sans-serif',
+    cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+JP', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal']
+  },
+  'noto-serif-jp-web': {
+    displayName: 'Noto Serif JP', family: 'Noto Serif JP', cssFamily: '"Noto Serif JP", serif',
+    cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Serif+JP', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal']
+  },
+  'noto-sans-sc-web': {
+    displayName: 'Noto Sans SC', family: 'Noto Sans SC', cssFamily: '"Noto Sans SC", sans-serif',
+    cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+SC', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['簡体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal']
+  },
+  'noto-sans-tc-web': {
+    displayName: 'Noto Sans TC', family: 'Noto Sans TC', cssFamily: '"Noto Sans TC", sans-serif',
+    cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+TC', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['繁体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal']
+  },
+  'source-han-sans-web': {
+    displayName: 'Source Han Sans', family: 'Source Han Sans CN', cssFamily: '"Source Han Sans CN", sans-serif',
+    sourceUrl: 'https://github.com/adobe-fonts/source-han-sans/tree/2.005R', provider: 'Adobe Source Han Sans 2.005R', license: 'SIL Open Font License 1.1', officialScripts: ['簡体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal'], fontFiles: { 400: 'https://cdn.jsdelivr.net/gh/adobe-fonts/source-han-sans@2.005R/SubsetOTF/CN/SourceHanSansCN-Regular.otf', 700: 'https://cdn.jsdelivr.net/gh/adobe-fonts/source-han-sans@2.005R/SubsetOTF/CN/SourceHanSansCN-Bold.otf' }
+  },
+  'inter-web': {
+    displayName: 'Inter', family: 'Inter', cssFamily: 'Inter, sans-serif',
+    cssUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Inter', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal']
+  },
+  'ibm-plex-sans-web': {
+    displayName: 'IBM Plex Sans', family: 'IBM Plex Sans', cssFamily: '"IBM Plex Sans", sans-serif',
+    cssUrl: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/IBM+Plex+Sans', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal']
+  },
+  'jetbrains-mono-web': {
+    displayName: 'JetBrains Mono', family: 'JetBrains Mono', cssFamily: '"JetBrains Mono", monospace',
+    cssUrl: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/JetBrains+Mono', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal']
+  },
+  'zen-kaku-gothic-new-web': {
+    displayName: 'Zen Kaku Gothic New', family: 'Zen Kaku Gothic New', cssFamily: '"Zen Kaku Gothic New", sans-serif',
+    cssUrl: 'https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Zen+Kaku+Gothic+New', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal']
+  },
+  'shippori-mincho-web': {
+    displayName: 'Shippori Mincho', family: 'Shippori Mincho', cssFamily: '"Shippori Mincho", serif',
+    cssUrl: 'https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Shippori+Mincho', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal']
+  }
 };
 
 function makeFontEntry(base) {
@@ -339,6 +369,9 @@ const fonts = [
       openType: makeOpenTypeProfile(false, [])
     },
     openTypeAnalysisState: 'not-analyzed',
+    categoryType: 'sans-serif',
+    recommendedFor: ['body', 'heading'],
+    languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' },
     notes: 'Web配信フォント向けに同じ表示形式でOpenType機能を確認します。'
   }),
   makeWebFontEntry('noto-serif-jp-web', { category: '明朝体 / セリフ', impression: ['端正', '落ち着いた', '本文向け'], uses: ['日本語本文', '見出し'], attributes: { supports: ['基本ラテン対応', '日本語対応', 'Webフォント'], width: 'プロポーショナル', classification: '明朝体 / セリフ', environment: 'Webブラウザ', features: [], openType: makeOpenTypeProfile(false, []) }, categoryType: 'serif', recommendedFor: ['body', 'heading'], languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }, notes: '日本語の明朝・セリフ系として選択時に読み込みます。' }),
@@ -390,60 +423,49 @@ const fonts = [
   })
 ];
 
-const memoFontMetadata = {
+const recommendationCatalog = window.FontRecommendationCatalog?.FONT_OPTIONS || [];
+const recommendationMetadataById = new Map(recommendationCatalog.map((font) => [font.id, font]));
+
+const fontCardSupplementalMetadata = {
   'segoe-ui': {
-    memoCssFamily: '"Segoe UI", "Yu Gothic UI", sans-serif',
     categoryType: 'sans-serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'yu-gothic-ui': {
-    memoCssFamily: '"Yu Gothic UI", "Hiragino Sans", Meiryo, system-ui, sans-serif',
     categoryType: 'sans-serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   meiryo: {
-    memoCssFamily: 'Meiryo, "Yu Gothic UI", sans-serif',
     categoryType: 'sans-serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'ms-mincho': {
-    memoCssFamily: '"ＭＳ 明朝", "MS Mincho", serif',
     categoryType: 'serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   consolas: {
-    memoCssFamily: 'Consolas, "Courier New", monospace',
     categoryType: 'monospace',
     recommendedFor: ['code'],
     languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'cascadia-code': {
-    memoCssFamily: '"Cascadia Code", Consolas, monospace',
     categoryType: 'monospace',
     recommendedFor: ['code'],
     languages: { latin: 'unknown', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'courier-new': {
-    memoCssFamily: '"Courier New", Consolas, monospace',
     categoryType: 'monospace',
     recommendedFor: ['code'],
     languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'times-new-roman': {
-    memoCssFamily: '"Times New Roman", "ＭＳ 明朝", serif',
     categoryType: 'serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
-  },
-  'noto-sans-jp-web': {
-    memoCssFamily: '"Noto Sans JP", sans-serif',
-    categoryType: 'sans-serif',
-    recommendedFor: ['body', 'heading'],
-    languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   }
 };
 
@@ -606,13 +628,23 @@ function normalizeOpenTypeProfile(fontId) {
 }
 
 fonts.forEach((font) => {
-  Object.assign(font, memoFontMetadata[font.id], officialFontMetadata[font.id]);
+  const recommendationMetadata = recommendationMetadataById.get(font.id);
+  if (!recommendationMetadata) throw new Error(`推薦用メタデータがありません: ${font.id}`);
+  Object.assign(font, fontCardSupplementalMetadata[font.id], {
+    memoCssFamily: recommendationMetadata.memoCssFamily
+  }, officialFontMetadata[font.id]);
   font.attributes = {
     ...font.attributes,
     fontFace: createFontFaceProfile(font),
     openType: normalizeOpenTypeProfile(font.id)
   };
   font.metadataConfirmedAt = '2026-08-18';
+});
+
+const recommendationFonts = recommendationCatalog.map((metadata) => {
+  const font = fonts.find((item) => item.id === metadata.id);
+  if (!font) throw new Error(`推薦用メタデータに未登録のフォントがあります: ${metadata.id}`);
+  return { ...font, ...metadata };
 });
 
 const samples = {
@@ -639,6 +671,7 @@ const state = {
 const selector = document.getElementById('fontSelector');
 const cardGrid = document.getElementById('cardGrid');
 const integrationApi = window.FontComparisonIntegration;
+const recommendationApi = window.FontRecommendation;
 const coverageApi = window.FontCoverage;
 const coverageData = window.FontCoverageData;
 const memoIntegration = integrationApi.parseMemoNexusParams(location.search, fonts.map((font) => font.id));
@@ -646,10 +679,12 @@ const memoNexusPanel = document.getElementById('memoNexusPanel');
 const memoNexusContext = document.getElementById('memoNexusContext');
 const memoNexusSample = document.getElementById('memoNexusSample');
 const memoNexusStatus = document.getElementById('memoNexusStatus');
-const recommendedOnly = document.getElementById('recommendedOnly');
+const fontRecommendationForm = document.getElementById('fontRecommendationForm');
+const fontRecommendationPrompt = document.getElementById('fontRecommendationPrompt');
+const fontRecommendationResults = document.getElementById('fontRecommendationResults');
 const returnToMemoButton = document.getElementById('returnToMemoButton');
-const copyFontSettingButton = document.getElementById('copyFontSettingButton');
 let selectedMemoFontId = memoIntegration?.currentFontId || null;
+let currentRecommendations = [];
 
 function escapeHtml(value) {
   return String(value)
@@ -660,8 +695,8 @@ function escapeHtml(value) {
     .replaceAll("'", '&#39;');
 }
 
-function isRecommended(font) {
-  return Boolean(memoIntegration && font.recommendedFor.includes(memoIntegration.target));
+function recommendationForFont(font) {
+  return currentRecommendations.find((result) => result.font.id === font.id) || null;
 }
 
 function languageStatusLabel(value) {
@@ -673,9 +708,79 @@ function languageStatusLabel(value) {
   }[value] || '未確認';
 }
 
+function recommendationLanguageInfoText(font) {
+  const languages = recommendationMetadataById.get(font.id)?.languages;
+  if (!languages) return '条件検索の言語区分：未確認';
+  return `条件検索の言語区分：ラテン ${languageStatusLabel(languages.latin)} / 日本語 ${languageStatusLabel(languages.japanese)} / 簡体字 ${languageStatusLabel(languages.simplifiedChinese)} / 繁体字 ${languageStatusLabel(languages.traditionalChinese)}`;
+}
+
 function orderedFonts(items) {
-  if (!memoIntegration) return items;
-  return [...items].sort((a, b) => Number(isRecommended(b)) - Number(isRecommended(a)));
+  if (!memoIntegration || currentRecommendations.length === 0) return items;
+  const ranks = new Map(currentRecommendations.map((result) => [result.font.id, result.rank]));
+  return [...items].sort((a, b) => (ranks.get(a.id) || Infinity) - (ranks.get(b.id) || Infinity));
+}
+
+function recommendationAnswers() {
+  const values = new FormData(fontRecommendationForm);
+  return {
+    language: values.get('recommendationLanguage'),
+    mood: values.get('recommendationMood'),
+    purpose: values.get('recommendationPurpose')
+  };
+}
+
+function fontSourceTypeLabel(font) {
+  return font.sourceType === 'web' ? 'Webフォント' : 'システムフォント';
+}
+
+function appendRecommendationResult(result) {
+  const item = document.createElement('li');
+  item.className = 'font-recommendation-result';
+
+  const heading = document.createElement('div');
+  heading.className = 'font-recommendation-result-heading';
+  const name = document.createElement('strong');
+  name.textContent = `${result.rank}位 ${result.font.name}`;
+  const source = document.createElement('span');
+  source.className = `font-source-badge ${result.font.sourceType === 'web' ? 'web' : 'system'}`;
+  source.textContent = fontSourceTypeLabel(result.font);
+  heading.append(name, source);
+
+  const reasons = document.createElement('ul');
+  reasons.className = 'recommendation-reasons';
+  result.reasons.forEach((reason) => {
+    const entry = document.createElement('li');
+    entry.textContent = reason;
+    reasons.appendChild(entry);
+  });
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'select-recommended-font';
+  const selected = memoIntegration
+    ? result.font.id === selectedMemoFontId
+    : state.selectedIds.includes(result.font.id);
+  button.textContent = selected
+    ? (memoIntegration ? '選択中' : '比較対象に追加済み')
+    : (memoIntegration ? 'このフォントを選択' : '比較対象に追加');
+  button.setAttribute('aria-pressed', String(selected));
+  button.addEventListener('click', () => selectRecommendedFont(result.font));
+  item.append(heading, reasons, button);
+  fontRecommendationResults.appendChild(item);
+}
+
+function renderRecommendationResults() {
+  if (!fontRecommendationResults) return;
+  fontRecommendationResults.textContent = '';
+  fontRecommendationPrompt.hidden = currentRecommendations.length > 0;
+  currentRecommendations.forEach(appendRecommendationResult);
+}
+
+function showRecommendations() {
+  currentRecommendations = recommendationApi.recommendFonts(recommendationFonts, recommendationAnswers(), 3);
+  renderRecommendationResults();
+  renderSelector();
+  renderCards();
 }
 
 function openTypeFeatureRows(font) {
@@ -1250,7 +1355,10 @@ function renderSelector() {
     label.innerHTML = `
       <input type="checkbox" value="${escapeHtml(font.id)}" ${state.selectedIds.includes(font.id) ? 'checked' : ''} />
       <span>${escapeHtml(font.name)}</span>
-      ${font.webFont ? `<span class="web-font-badge">Web</span><span class="web-font-status ${webFontState(font).status}">${webFontStatusText(font)}</span>` : ''}
+      ${memoIntegration
+        ? `<span class="font-source-badge ${font.webFont ? 'web' : 'system'}">${font.webFont ? 'Web' : 'システム'}</span>`
+        : (font.webFont ? '<span class="web-font-badge">Web</span>' : '')}
+      ${font.webFont ? `<span class="web-font-status ${webFontState(font).status}">${webFontStatusText(font)}</span>` : ''}
     `;
     label.querySelector('input').addEventListener('change', (event) => {
       if (event.target.checked) {
@@ -1268,10 +1376,7 @@ function renderSelector() {
 }
 
 function renderCards() {
-  const selectedFonts = orderedFonts(fonts.filter((font) => {
-    if (!state.selectedIds.includes(font.id)) return false;
-    return !memoIntegration || !recommendedOnly.checked || isRecommended(font);
-  }));
+  const selectedFonts = orderedFonts(fonts.filter((font) => state.selectedIds.includes(font.id)));
 
   if (selectedFonts.length === 0) {
     cardGrid.innerHTML = '<div class="empty-state">表示するフォントがありません。選択を増やしてください。</div>';
@@ -1280,8 +1385,9 @@ function renderCards() {
 
   cardGrid.innerHTML = '';
   selectedFonts.forEach((font) => {
+    const recommendation = recommendationForFont(font);
     const card = document.createElement('article');
-    card.className = `font-card${font.id === selectedMemoFontId ? ' memo-selected' : ''}`;
+    card.className = `font-card${font.id === selectedMemoFontId ? ' memo-selected' : ''}${recommendation ? ' memo-recommended' : ''}`;
     card.dataset.fontId = font.id;
     card.style.setProperty('--font-size', `${state.fontSize}px`);
     card.style.setProperty('--font-weight', `${state.fontWeight}`);
@@ -1292,13 +1398,17 @@ function renderCards() {
     card.innerHTML = `
       ${memoIntegration ? `
         <div class="memo-font-choice">
-          <span class="recommendation-badge ${isRecommended(font) ? 'recommended' : ''}">
-            ${isRecommended(font) ? 'この用途に推奨' : '推奨情報なし'}
-          </span>
+          <div class="memo-font-choice-meta">
+            <span class="font-source-badge ${font.webFont ? 'web' : 'system'}">${font.webFont ? 'Webフォント' : 'システムフォント'}</span>
+            <span class="recommendation-badge ${recommendation ? 'recommended' : ''}">
+              ${recommendation ? `推薦${recommendation.rank}位` : '推薦順位なし'}
+            </span>
+          </div>
           <button type="button" class="select-memo-font" data-font-id="${escapeHtml(font.id)}" aria-pressed="${font.id === selectedMemoFontId}">
             ${font.id === selectedMemoFontId ? '選択中' : 'このフォントを選択'}
           </button>
         </div>
+        ${recommendation ? `<ul class="card-recommendation-reasons">${recommendation.reasons.map((reason) => `<li>${escapeHtml(reason)}</li>`).join('')}</ul>` : ''}
       ` : ''}
       <div class="font-card-header">
         <h3 class="font-card-name">${escapeHtml(font.name)}</h3>
@@ -1331,7 +1441,7 @@ function renderCards() {
             <li>${openTypeFeatureSummaryText(font)}</li>
             ${officialMetadataHtml(font)}
             ${memoIntegration ? `
-              <li>言語情報: ラテン ${languageStatusLabel(font.languages.latin)} / 日本語 ${languageStatusLabel(font.languages.japanese)} / 簡体字 ${languageStatusLabel(font.languages.simplifiedChinese)} / 繁体字 ${languageStatusLabel(font.languages.traditionalChinese)} / 韓国語 ${languageStatusLabel(font.languages.korean)}</li>
+              <li>${escapeHtml(recommendationLanguageInfoText(font))}</li>
             ` : ''}
           </ul>
         </div>
@@ -1354,14 +1464,7 @@ function renderCards() {
 
     renderSampleContent(font, card.querySelector('.sample-area'));
 
-    card.querySelector('.select-memo-font')?.addEventListener('click', () => {
-      selectedMemoFontId = font.id;
-      const request = explicitlyRequestWebFont(font);
-      memoNexusStatus.textContent = request.isWebFont
-        ? `${font.name}を選択しました。Webフォントの読込状態はカードに表示します。`
-        : `${font.name}を選択しました。内容を確認してMemo Nexusへ戻れます。`;
-      renderCards();
-    });
+    card.querySelector('.select-memo-font')?.addEventListener('click', () => selectMemoFont(font));
     card.querySelector('.retry-web-font')?.addEventListener('click', () => loadWebFont(font));
     const openTypeButton = card.querySelector('.open-type-feature-button');
     if (openTypeButton) {
@@ -1429,6 +1532,7 @@ function updateControlLabels() {
 function initializeMemoIntegration() {
   if (!memoIntegration) return;
   const targetLabels = { body: '本文', heading: '見出し', code: 'コード' };
+  const targetPurposes = { body: 'writing', heading: 'heading', code: 'code' };
   const currentFont = fonts.find((font) => font.id === memoIntegration.currentFontId);
   state.selectedIds = fonts.map((font) => font.id);
   memoNexusPanel.hidden = false;
@@ -1440,6 +1544,8 @@ function initializeMemoIntegration() {
     `現在: ${currentFont?.name || '未確認'}`
   ].join(' / ');
   memoNexusSample.textContent = memoIntegration.sample || '比較文章は指定されていません。';
+  const initialPurpose = fontRecommendationForm.querySelector(`[name="recommendationPurpose"][value="${targetPurposes[memoIntegration.target]}"]`);
+  if (initialPurpose) initialPurpose.checked = true;
 
   const canReturn = memoIntegration.errors.length === 0
     && integrationApi.isAllowedReturnUrl(memoIntegration.returnUrl);
@@ -1448,31 +1554,37 @@ function initializeMemoIntegration() {
     const detail = memoIntegration.errors.length
       ? memoIntegration.errors.join(' ')
       : '安全なMemo Nexusの戻り先を確認できません。';
-    memoNexusStatus.textContent = `${detail} フォント設定のコピーは利用できます。`;
+    memoNexusStatus.textContent = `${detail} 比較は続けられますが、Memo Nexusへ戻ることはできません。`;
   }
-}
-
-async function copyText(value) {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(value);
-      return;
-    } catch {
-      // ローカルファイルなどClipboard APIが使えない環境では下の方法を試します。
-    }
-  }
-  const textarea = document.createElement('textarea');
-  textarea.value = value;
-  textarea.className = 'copy-fallback';
-  document.body.appendChild(textarea);
-  textarea.select();
-  const copied = document.execCommand('copy');
-  textarea.remove();
-  if (!copied) throw new Error('クリップボードへコピーできませんでした。');
 }
 
 function selectedMemoFont() {
   return fonts.find((font) => font.id === selectedMemoFontId);
+}
+
+function selectComparisonFont(font) {
+  if (!state.selectedIds.includes(font.id)) state.selectedIds.push(font.id);
+  explicitlyRequestWebFont(font);
+  renderRecommendationResults();
+  renderSelector();
+  renderCards();
+}
+
+function selectRecommendedFont(font) {
+  if (memoIntegration) selectMemoFont(font);
+  else selectComparisonFont(font);
+}
+
+function selectMemoFont(font) {
+  selectedMemoFontId = font.id;
+  if (!state.selectedIds.includes(font.id)) state.selectedIds.push(font.id);
+  const request = explicitlyRequestWebFont(font);
+  memoNexusStatus.textContent = request.isWebFont
+    ? `${font.name}を選択しました。Webフォントの読込状態はカードに表示します。`
+    : `${font.name}を選択しました。内容を確認してMemo Nexusへ戻れます。`;
+  renderRecommendationResults();
+  renderSelector();
+  renderCards();
 }
 
 function bindControls() {
@@ -1526,27 +1638,18 @@ function bindControls() {
     renderCards();
   });
 
-  recommendedOnly.addEventListener('change', renderCards);
+  fontRecommendationForm.addEventListener('change', showRecommendations);
   returnToMemoButton.addEventListener('click', () => {
     try {
       location.assign(integrationApi.buildMemoNexusReturnUrl(memoIntegration, selectedMemoFont()));
     } catch (error) {
-      memoNexusStatus.textContent = `${error.message} フォント設定をコピーして手動で利用してください。`;
+      memoNexusStatus.textContent = `${error.message} 比較状態は保持しています。連携URLを確認してください。`;
     }
-  });
-  copyFontSettingButton.addEventListener('click', () => {
-    copyText(integrationApi.fontSettingCopyText(memoIntegration, selectedMemoFont()))
-      .then(() => {
-        memoNexusStatus.textContent = 'フォント設定をコピーしました。';
-      })
-      .catch((error) => {
-        memoNexusStatus.textContent = error.message || 'フォント設定をコピーできませんでした。';
-      });
   });
 }
 
 initializeMemoIntegration();
-renderSelector();
+showRecommendations();
 bindControls();
 bindOpenTypeDialogEvents();
 updateControlLabels();

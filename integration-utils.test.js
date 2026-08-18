@@ -6,10 +6,10 @@ const test = require('node:test');
 const {
   MAX_SAMPLE_LENGTH,
   buildMemoNexusReturnUrl,
-  fontSettingCopyText,
   isAllowedReturnUrl,
   parseMemoNexusParams
 } = require('./integration-utils');
+const { FONT_OPTIONS } = require('./font-recommendation-catalog');
 
 const fontIds = ['yu-gothic-ui', 'consolas'];
 const font = {
@@ -17,6 +17,19 @@ const font = {
   name: 'Yu Gothic UI',
   memoCssFamily: '"Yu Gothic UI", "Hiragino Sans", Meiryo, system-ui, sans-serif'
 };
+
+const webFonts = [
+  ['noto-sans-jp-web', 'Noto Sans JP', '"Noto Sans JP", "Yu Gothic UI", "Hiragino Sans", Meiryo, sans-serif'],
+  ['noto-serif-jp-web', 'Noto Serif JP', '"Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN", "MS PMincho", serif'],
+  ['noto-sans-sc-web', 'Noto Sans SC', '"Noto Sans SC", "Microsoft YaHei", "PingFang SC", sans-serif'],
+  ['noto-sans-tc-web', 'Noto Sans TC', '"Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif'],
+  ['source-han-sans-web', 'Source Han Sans', '"Source Han Sans CN", "Noto Sans SC", "Microsoft YaHei", sans-serif'],
+  ['inter-web', 'Inter', 'Inter, "Segoe UI", Arial, sans-serif'],
+  ['ibm-plex-sans-web', 'IBM Plex Sans', '"IBM Plex Sans", "Segoe UI", Arial, sans-serif'],
+  ['jetbrains-mono-web', 'JetBrains Mono', '"JetBrains Mono", "Cascadia Code", Consolas, monospace'],
+  ['zen-kaku-gothic-new-web', 'Zen Kaku Gothic New', '"Zen Kaku Gothic New", "Yu Gothic UI", "Hiragino Sans", Meiryo, sans-serif'],
+  ['shippori-mincho-web', 'Shippori Mincho', '"Shippori Mincho", "Yu Mincho", "Hiragino Mincho ProN", "MS PMincho", serif']
+].map(([id, name, memoCssFamily]) => ({ id, name, memoCssFamily }));
 
 test('mode=memo-nexusのURLパラメータをURLSearchParamsで読み取る', () => {
   const query = new URLSearchParams({
@@ -56,6 +69,7 @@ test('Memo Nexus本番URLとローカル開発URLだけを戻り先として許�
   assert.equal(isAllowedReturnUrl('http://localhost:8080/memo/'), true);
   assert.equal(isAllowedReturnUrl('http://127.0.0.1:3000/'), true);
   assert.equal(isAllowedReturnUrl('https://evil.example/memo/'), false);
+  assert.equal(isAllowedReturnUrl('https://user:password@tetsujisugimori-coder.github.io/memo/'), false);
   assert.equal(isAllowedReturnUrl('javascript:alert(1)'), false);
 });
 
@@ -72,13 +86,43 @@ test('選択フォントを検証済み戻りURLへ安全に設定する', () =>
   assert.equal(url.searchParams.get('keep'), '1');
   assert.equal(url.searchParams.get('fontSource'), 'font-comparison');
   assert.equal(url.searchParams.get('fontTarget'), 'body');
+  assert.equal(url.searchParams.get('fontScope'), 'note');
   assert.equal(url.searchParams.get('fontId'), 'yu-gothic-ui');
   assert.equal(url.searchParams.get('fontFamily'), font.memoCssFamily);
+  assert.equal(url.searchParams.get('fontLabel'), font.name);
   assert.equal(url.searchParams.get('fontMemoId'), 'memo-1');
   assert.equal(url.hash, '');
 });
 
-test('不正な戻り先では遷移URLを作らずコピー用文字列は作れる', () => {
+test('全10WebフォントのID・表示名・font-familyを戻りURLへ設定できる', () => {
+  const context = {
+    target: 'body',
+    scope: 'global',
+    returnUrl: 'https://tetsujisugimori-coder.github.io/memo/',
+    memoId: '',
+    errors: []
+  };
+  for (const webFont of webFonts) {
+    assert.equal(FONT_OPTIONS.find((fontOption) => fontOption.id === webFont.id).memoCssFamily, webFont.memoCssFamily);
+    const url = new URL(buildMemoNexusReturnUrl(context, webFont));
+    assert.equal(url.searchParams.get('fontId'), webFont.id);
+    assert.equal(url.searchParams.get('fontLabel'), webFont.name);
+    assert.equal(url.searchParams.get('fontFamily'), webFont.memoCssFamily);
+  }
+});
+
+test('未登録の現在フォントIDを連携入力として受け入れない', () => {
+  const query = new URLSearchParams({
+    mode: 'memo-nexus',
+    target: 'body',
+    currentFontId: 'unknown-font'
+  });
+  const result = parseMemoNexusParams(`?${query}`, fontIds);
+  assert.match(result.errors.join(' '), /現在のフォントを確認できません/);
+  assert.equal(result.currentFontId, fontIds[0]);
+});
+
+test('不正な戻り先では遷移URLを作らない', () => {
   const context = {
     target: 'heading',
     scope: 'global',
@@ -87,5 +131,20 @@ test('不正な戻り先では遷移URLを作らずコピー用文字列は作�
     errors: []
   };
   assert.throws(() => buildMemoNexusReturnUrl(context, font), /安全なMemo Nexus/);
-  assert.match(fontSettingCopyText(context, font), /font-family: "Yu Gothic UI"/);
+});
+
+test('推薦契約の全18フォントを同じID・表示名・font-familyで戻せる', () => {
+  const context = {
+    target: 'body',
+    scope: 'global',
+    returnUrl: 'https://tetsujisugimori-coder.github.io/memo/',
+    memoId: 'memo-contract',
+    errors: []
+  };
+  for (const contractFont of FONT_OPTIONS) {
+    const url = new URL(buildMemoNexusReturnUrl(context, contractFont));
+    assert.equal(url.searchParams.get('fontId'), contractFont.id);
+    assert.equal(url.searchParams.get('fontLabel'), contractFont.name);
+    assert.equal(url.searchParams.get('fontFamily'), contractFont.memoCssFamily);
+  }
 });

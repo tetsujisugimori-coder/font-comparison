@@ -1,3 +1,49 @@
+## 2026-08-19 KaTeXコピー復元・画面切替・推薦言語表示の整合
+
+- 原因: Memo Nexusのコピー機能を削除した差分で、KaTeXが以前から共用していた`#copyToast`と`.copy-toast`／`.copy-fallback`まで削除されていた。また、共通条件検索パネルを`fontComparisonView`の外へ移した後もKaTeXの`setView()`が同パネルを切り替えず、連携カードは推薦契約ではなく旧カード用`font.languages`を表示していたため、推薦理由とカード表示が食い違っていた。
+- `#copyToast`とKaTeX用通知・フォールバックCSSだけを復元し、既存のClipboard API、800msタイムアウト、`execCommand('copy')`フォールバック、成功／失敗通知を維持した。`showToast()`は通知要素がない場合も例外にしない。Memo Nexusの「フォント指定をコピー」、プレビュー、`fontSettingCopyText()`は復元していない。
+- `katex-page.js`の`setView()`で`#fontSearchPanel`をフォント比較ビュー、KaTeXビューと同時に切り替えるようにした。`#katex`、`#category-*`、`#fontRolesSection`を共通の`isKatexHash()`で判定し、直リンク、hashchange、通常フォントへの復帰で同じ状態になる。
+- Memo Nexus連携カードに「条件検索の言語区分：ラテン … / 日本語 … / 簡体字 … / 繁体字 …」を表示し、`recommendationMetadataById`の推薦契約を参照するようにした。韓国語は含めず、従来概要、公式に確認した文字体系、cmap収録判定、OpenType情報は従来どおり別行で保持した。
+- 自動テスト: KaTeXコピーのClipboard API成功、`execCommand`成功、両方失敗、通知の成功／失敗、通知要素欠落時、`setView()`、直リンク／hashchange判定を直接実行する`katex-page.test.js`を追加した。Memo Nexusコピー不在とKaTeXコピー存在を別契約として固定し、Segoe UIとCascadia Codeの推薦言語表示も直接確認した。`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation-catalog.js`、`node --check font-recommendation.js`、`node --check katex-page.js`、`node --test`（110件、失敗0件）、`git diff --check`が成功した。
+- 実ブラウザ（Edge）: 通常表示で検索パネルとYu Gothic UI／Meiryo／Noto Sans JPを確認し、KaTeXボタンと`#category-basic`直リンクでは検索パネル非表示、通常フォント復帰では再表示になった。数字用例のコピーで「LaTeXをコピーしました」を確認した。連携モードは全18カード、Memo NexusコピーUI 0件、同じ候補順、Segoe UIの日本語一部対応、Cascadia Codeのラテン対応とCJK非対応、公式情報・cmap情報の併記を確認した。Webフォントstylesheetは明示選択前0件、Noto Sans JP選択後1件だった。
+- 未確認: 390px／タブレット幅／PC幅の再確認、ライト／ダーク表示、コンソールerror／warning、OSクリップボード内容の読み戻し、公開済みMemo Nexusとの実アプリ間往復は今回未確認。
+
+## 2026-08-19 Memo Nexus推薦契約と段階選出の統一
+
+- 原因: Font Comparisonは全言語状態を合計点だけで並べ、カード表示用の`languages`、`impression`、`uses`も推薦に流用していたため、Memo Nexus PR #114と候補群・スコア・カタログ順が一致しなかった。特に中立キーワードの「中立」が欠け、簡体字・繁体字の`partial`と欧文系の`unsupported`も契約値と異なっていた。
+- `font-recommendation-catalog.js`を追加し、Memo Nexusの`FONT_OPTIONS`を正として全18件のID、表示名、種別、分類、用途、言語状態、印象、利用目的、連携用`font-family`、カタログ順を照合した。カード説明・cmap・OpenType情報は上書きせず、推薦専用カタログとして分離した。
+- 推薦候補を`supported`／`partial`、`unknown`、`unsupported`の3段階に分け、前段階だけで3件に満たない場合に限って次段階を補う方式へ変更した。各段階内は従来の言語・雰囲気・用途スコアとカタログ順を使い、最大3件・重複排除・同点安定順を維持した。
+- 推薦理由は言語状態を優先し、`partial`は「一部対応」、`unknown`は「未確認」、`unsupported`は「非対応」を最大2理由の中に必ず含めるようにした。
+- 実データの上位3件は、日本語・中立・長文がYu Gothic UI／Meiryo／Noto Sans JP、日本語・フォーマル・長文がMS Mincho／Noto Serif JP／Shippori Mincho、簡体字・中立・長文がNoto Sans SC／Source Han Sans／Noto Sans TC、繁体字・中立・長文がNoto Sans TC／Noto Sans SC／Source Han Sans、英数字・中立・コードがConsolas／Cascadia Code／JetBrains Monoになり、Memo Nexusと一致した。
+- 自動テスト: 段階選出、各言語状態の理由、最大3件・重複排除・安定順、全18件の契約、代表5条件、全18件の戻りURL、既存UI回帰を追加・更新した。`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation-catalog.js`、`node --check font-recommendation.js`、`node --test`（103件、失敗0件）、`git diff --check`が成功した。
+- 実ブラウザ: 通常表示で日本語初期・簡体字・繁体字・英数字コードの順序を確認し、連携モードでも簡体字・繁体字が同順だった。条件変更中はWebフォントstylesheet 0件、明示選択後だけ1件、通常表示は既存比較へ追加、連携表示は全18カードを維持して選択だけでは遷移しないこと、XSS風文章の文字表示、コピーUI 0件、OSダークで理由と一部対応表示が読めることを確認した。
+- 未確認: 390px／タブレット幅／PC幅、ライト表示、コンソールerror／warningは最終ブラウザ確認で再取得していない。公開済みMemo Nexusとの実アプリ間往復も未確認。
+
+## 2026-08-19 共通条件検索UIと連携コピー機能の削除
+
+- Memo Nexus連携パネル内にあった推薦アンケートを「条件からフォントを探す」として独立させ、通常表示と連携モードで同じフォーム、結果欄、変更イベントを共用する構造へ変更した。フォームは1つだけで、送信ボタンを廃止し、条件変更時に自動更新する。
+- 初期条件を日本語、中立・読みやすさ重視、長文を書くに統一し、通常表示でも起動直後から上位3件を順位、名前、システム／Web種別、理由、操作付きで表示する。Memo Nexusの`target=body|heading|code`は主な用途だけを長文／見出し／コードへ上書きする。
+- 通常表示の候補操作は既存の比較対象へ追加する。連携モードの候補・カード操作は連携用選択フォントだけを更新し、自動遷移せず「Memo Nexusで使用」を押した時だけ戻りURLを生成する。候補外フォントと連携時の全18カードを維持した。
+- 初期候補表示、条件変更、並べ替え、連携時の全カード表示ではWebフォントを読み込まず、候補・チェックボックス・連携カードから明示選択した時だけ既存の遅延読込処理を呼ぶ。
+- 「フォント指定をコピー」ボタン、説明、プレビュー、ステータス、Clipboard API、フォールバック処理、`fontSettingCopyText()`、専用CSS・テスト・README記述を削除した。不正な戻り先ではコピーを案内せず、比較を継続できるエラーを表示して戻るボタンを無効にする。
+- 既存のシステムフォント8件・Webフォント10件、連携パラメータ、戻りURL許可リスト、資格情報付きURL拒否、フォントID／`font-family`、比較文章700文字上限、安全なテキスト描画、Webフォント400／700読込、OpenType・収録文字・KaTeX機能を維持した。
+- 自動テスト: `node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation.js`、`node --test`（95件、失敗0件）、`git diff --check`が成功した。単一条件検索、既定値、target用途対応、通常／連携の選択分岐、Webフォント遅延読込、コピー機能削除、連携契約を追加確認した。
+- 実ブラウザ: 通常表示の既定3候補、条件変更による即時更新、比較対象追加、明示選択前stylesheet 0件・Webフォント候補選択後1件を確認した。連携モードは単一フォーム・全18カード、XSS風サンプルの文字表示、選択だけでは遷移しないこと、戻りURLの用途・範囲・フォント・メモID、不正URL時の比較維持とコピーUI 0件を確認した。OSダーク表示も目視確認した。
+- 未確認: 全10Webフォントの戻りURL生成は自動テストで確認したが、実ブラウザのWebフォント読込は代表例に限定した。公開済みMemo Nexusの受入側を同時に更新・確認していないため、実アプリ間の往復は未確認。
+
+## 2026-08-18 Memo Nexus推薦アンケートとコピー確認UI
+
+- 「この用途への推奨だけ表示」チェックボックスを削除し、使用言語、文章の雰囲気、主な用途の3問から重複しない上位3件を安定順で提示する方式へ変更した。`target=body|heading|code`は主な用途だけを初期選択し、言語と雰囲気は未回答のまま開始する。
+- 推薦ロジックを`font-recommendation.js`へ分離した。`languages`、`categoryType`、`recommendedFor`、`impression`、`uses`、`sourceType`と、フォントIDごとに明示した小さな雰囲気プロファイルを採点する。`supported`、`partial`、`unknown`、`unsupported`を区別し、未確認を非対応とは断定しない。
+- 推薦3件は順位、フォント名、システム／Webの種別、1～2件の理由、「このフォントを選択」を表示する。全フォントカードは消さず、推薦3件だけを先頭へ並べ、同じ順位・理由をカードにも表示する。
+- システムフォントは端末のインストール済みフォントを使い、Webフォントは選択後にインターネットから読み込み、失敗時はCSSの後続フォントへフォールバックすることを連携パネルへ常時表示した。推薦の計算・並べ替えだけではWebフォントを読み込まず、候補またはカードの明示選択時だけ既存の遅延読込処理を呼ぶ。
+- `webFontCatalog`をWebフォントの`memoCssFamily`の単一情報源にし、Noto Sans JP、Noto Serif JP、Noto Sans SC、Noto Sans TC、Source Han Sans CN、Inter、IBM Plex Sans、JetBrains Mono、Zen Kaku Gothic New、Shippori Minchoの全10件をMemo Nexus戻りURLへ設定できるようにした。日本語、簡体字、繁体字、英数字、コード向けで後続フォントを分けた。
+- 「フォント設定をコピー」を「フォント指定をコピー」へ変更し、「コピー内容：用途、フォント名、font-family」と実際の3行を常時表示した。画面表示とクリップボードは同じ`fontSettingCopyText()`を使い、成功文言を「用途・フォント名・font-familyをコピーしました。」へ変更した。戻り先エラー時の案内も「フォント指定」に統一した。
+- 既存の戻りURL許可リスト、資格情報付きURL拒否、登録済みフォントID検証、比較文章700文字上限、テキストノードによるXSS対策、文字収録判定、OpenTypeダイアログ、KaTeXビューを維持した。
+- 自動テスト: `node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation.js`、`node --test`（94件、失敗0件）、`git diff --check`が成功した。推薦5パターン、`unknown`、最大3件・重複排除・同点安定順、旧UI削除、target初期値、全カード維持、推薦時通信なし、明示選択、全10WebフォントURL、コピー共通生成元、安全性を追加確認した。
+- 実ブラウザ: 通常起動は連携パネル非表示・既存3カード、連携起動は3問・全18カード、回答後は上位3件と理由、推薦表示時はWebフォントstylesheet 0件、Noto Sans JP明示選択後は同フォントのstylesheet 1件を確認した。390pxは1列、800pxはカード2列、1280pxは3列で横スクロールなし。ライト／ダーク切替、XSS文字列の非実行、console error / warning 0件も確認した。
+- 未確認: 全10Webフォントの戻りURL生成は自動テストで確認したが、実ブラウザの連続Webフォント読込はタイムアウトを避けて代表1件だけにした。コピー成功表示とプレビューは一致したが、自動ブラウザからOSクリップボード内容を読み戻せず、実クリップボード内容の目視確認は未実施。現行Memo Nexus `main`は追加WebフォントIDをまだ登録していないため、受入側へ同じIDと`font-family`を追加するまでは実アプリ間の往復は未確認。
+
 ## 2026-08-18 選択時読み込みWebフォントの追加
 
 - Noto Sans JPの既存カード・メタデータ・Weight / Style表示を共通化し、Noto Serif JP、Noto Sans SC、Noto Sans TC、Source Han Sans、Inter、IBM Plex Sans、JetBrains Mono、Zen Kaku Gothic New、Shippori MinchoをWebフォントとして追加した。
