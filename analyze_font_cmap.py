@@ -451,23 +451,31 @@ def write_javascript(coverage_path: Path, opentype_path: Path, coverage_data: di
     coverage_fonts: dict[str, object] = dict(existing_coverage.get("fonts", {}))
     opentype_fonts: dict[str, object] = dict(existing_opentype.get("fonts", {}))
     prepared: list[tuple[Path, Path]] = []
-    target_ids = updated_ids or set(coverage_data["fonts"])
-    for font_id in target_ids:
-        coverage = coverage_data["fonts"][font_id]
-        open_type = open_type_data["fonts"][font_id]
-        coverage_summary, opentype_summary, detail = split_analysis_entries(font_id, coverage, open_type)
-        coverage_fonts[font_id] = coverage_summary
-        opentype_fonts[font_id] = opentype_summary
-        if detail["evidence"].get("status") == "analyzed":
-            target = details_dir / f"{font_id}.js"
-            prepared.append((create_temporary_file(target, serialize_detail_javascript(font_id, detail)), target))
-    coverage_summary_data = {"schemaVersion": SUMMARY_SCHEMA_VERSION, "generatedAt": coverage_data["generatedAt"], "fonts": coverage_fonts}
-    open_type_summary_data = {"schemaVersion": SUMMARY_SCHEMA_VERSION, "generatedAt": open_type_data["generatedAt"], "fonts": opentype_fonts}
-    prepared.extend([
-        (create_temporary_file(coverage_path, serialize_javascript_data("FontCoverageData", "cmap起動時サマリー。ファイル別の解析証拠はanalysis-detailsに分離。", coverage_summary_data)), coverage_path),
-        (create_temporary_file(opentype_path, serialize_javascript_data("FontOpenTypeData", "OpenType起動時サマリー。ファイル別の解析証拠はanalysis-detailsに分離。", open_type_summary_data)), opentype_path),
-    ])
-    replace_prepared_outputs(prepared)
+    try:
+        target_ids = updated_ids or set(coverage_data["fonts"])
+        for font_id in target_ids:
+            coverage = coverage_data["fonts"][font_id]
+            open_type = open_type_data["fonts"][font_id]
+            coverage_summary, opentype_summary, detail = split_analysis_entries(font_id, coverage, open_type)
+            coverage_fonts[font_id] = coverage_summary
+            opentype_fonts[font_id] = opentype_summary
+            if detail["evidence"].get("status") == "analyzed":
+                target = details_dir / f"{font_id}.js"
+                prepared.append((create_temporary_file(target, serialize_detail_javascript(font_id, detail)), target))
+        coverage_summary_data = {"schemaVersion": SUMMARY_SCHEMA_VERSION, "generatedAt": coverage_data["generatedAt"], "fonts": coverage_fonts}
+        open_type_summary_data = {"schemaVersion": SUMMARY_SCHEMA_VERSION, "generatedAt": open_type_data["generatedAt"], "fonts": opentype_fonts}
+        prepared.append((
+            create_temporary_file(coverage_path, serialize_javascript_data("FontCoverageData", "cmap起動時サマリー。ファイル別の解析証拠はanalysis-detailsに分離。", coverage_summary_data)),
+            coverage_path,
+        ))
+        prepared.append((
+            create_temporary_file(opentype_path, serialize_javascript_data("FontOpenTypeData", "OpenType起動時サマリー。ファイル別の解析証拠はanalysis-detailsに分離。", open_type_summary_data)),
+            opentype_path,
+        ))
+        replace_prepared_outputs(prepared)
+    finally:
+        for temporary, _target in prepared:
+            temporary.unlink(missing_ok=True)
 
 
 def main() -> int:

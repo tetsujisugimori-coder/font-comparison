@@ -65,7 +65,7 @@ test('収録判定データと文字判定スクリプトをapp.jsより先に�
 test('解析証拠の詳細JSは起動時に読み込まず、許可済みローダーでダイアログ表示後にだけ取得する', () => {
   assert.match(html, /font-opentype-data\.js[\s\S]*analysis-details-loader\.js[\s\S]*app\.js/);
   assert.doesNotMatch(html, /analysis-details\/[\w-]+\.js/);
-  assert.match(app, /FontAnalysisDetailsLoader\.load\(fontId\)/);
+  assert.match(app, /FontAnalysisDetailsLoader\.load\(fontId, profile\.analysis\.detailSchemaVersion\)/);
   assert.match(app, /解析詳細を読み込んでいます。/);
   assert.match(app, /data-retry-analysis-detail/);
   assert.match(app, /activeOpenTypeDetailRequest/);

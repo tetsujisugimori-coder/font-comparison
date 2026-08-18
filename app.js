@@ -809,7 +809,7 @@ function loadOpenTypeAnalysisDetail(font) {
   if (!fontId || !profile?.analysis?.hasDetails) return;
   const requestId = ++activeOpenTypeDetailRequest;
   renderAnalysisDetailLoading(fontId);
-  window.FontAnalysisDetailsLoader.load(fontId)
+  window.FontAnalysisDetailsLoader.load(fontId, profile.analysis.detailSchemaVersion)
     .then((detail) => {
       if (requestId !== activeOpenTypeDetailRequest) return;
       renderAnalysisDetail(fontId, detail, '解析詳細を読み込みました。');

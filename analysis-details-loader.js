@@ -24,15 +24,44 @@
   const pending = new Map();
 
   global.FontAnalysisDetails = global.FontAnalysisDetails || {};
+  const loadedScripts = new Map();
 
   function unavailable(fontId) {
     return new Error(`解析詳細データはありません: ${fontId}`);
   }
 
-  function load(fontId) {
+  function validationError(fontId, detail, expectedSchemaVersion) {
+    if (!detail || typeof detail !== 'object' || Array.isArray(detail)) {
+      return new Error(`解析詳細データがオブジェクトではありません: ${fontId}`);
+    }
+    if (detail.fontId !== fontId) {
+      return new Error(`解析詳細データのfontIdが一致しません: 要求 ${fontId} / 登録 ${detail.fontId || '未設定'}`);
+    }
+    if (expectedSchemaVersion != null && detail.schemaVersion !== expectedSchemaVersion) {
+      return new Error(`解析詳細データのschemaVersionが一致しません: ${fontId} / 期待 ${expectedSchemaVersion} / 登録 ${detail.schemaVersion ?? '未設定'}`);
+    }
+    return null;
+  }
+
+  function discardInvalidDetail(fontId, script) {
+    delete global.FontAnalysisDetails[fontId];
+    pending.delete(fontId);
+    const loadedScript = loadedScripts.get(fontId);
+    if (script || loadedScript) (script || loadedScript).remove();
+    loadedScripts.delete(fontId);
+  }
+
+  function load(fontId, expectedSchemaVersion) {
     const path = detailPaths[fontId];
     if (!path) return Promise.reject(unavailable(fontId));
-    if (global.FontAnalysisDetails[fontId]) return Promise.resolve(global.FontAnalysisDetails[fontId]);
+    const hasCached = Object.prototype.hasOwnProperty.call(global.FontAnalysisDetails, fontId);
+    const cached = global.FontAnalysisDetails[fontId];
+    if (hasCached) {
+      const error = validationError(fontId, cached, expectedSchemaVersion);
+      if (!error) return Promise.resolve(cached);
+      discardInvalidDetail(fontId);
+      return Promise.reject(error);
+    }
     if (pending.has(fontId)) return pending.get(fontId);
 
     const request = new Promise((resolve, reject) => {
@@ -42,17 +71,19 @@
       script.dataset.analysisDetailFor = fontId;
       script.onload = () => {
         const detail = global.FontAnalysisDetails[fontId];
-        if (!detail || detail.fontId !== fontId) {
-          pending.delete(fontId);
-          script.remove();
-          reject(new Error(`解析詳細JSに対象フォントの登録がありません: ${fontId}`));
+        const error = validationError(fontId, detail, expectedSchemaVersion);
+        if (error) {
+          discardInvalidDetail(fontId, script);
+          reject(error);
           return;
         }
         pending.delete(fontId);
+        loadedScripts.set(fontId, script);
         resolve(detail);
       };
       script.onerror = () => {
         pending.delete(fontId);
+        loadedScripts.delete(fontId);
         script.remove();
         reject(new Error(`解析詳細JSを読み込めませんでした: ${path}`));
       };
