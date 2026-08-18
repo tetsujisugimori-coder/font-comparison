@@ -24,14 +24,21 @@
 
   const LANGUAGE_REASON = {
     japanese: '日本語向けとして登録',
-    simplifiedChinese: '簡体字向けとして登録',
-    traditionalChinese: '繁体字向けとして登録',
+    simplifiedChinese: '簡体字中国語向けとして登録',
+    traditionalChinese: '繁体字中国語向けとして登録',
     latin: '英数字中心のUI・本文向け'
+  };
+
+  const LANGUAGE_LABEL = {
+    japanese: '日本語',
+    simplifiedChinese: '簡体字中国語',
+    traditionalChinese: '繁体字中国語',
+    latin: '英数字'
   };
 
   const MOOD_KEYWORDS = {
     casual: ['親しみ', '軽快', '現代的'],
-    neutral: ['読みやすい', '可読性', '明快', '安定感', '汎用', '実用的'],
+    neutral: ['読みやすい', '可読性', '明快', '安定感', '汎用', '実用的', '中立'],
     formal: ['落ち着いた', '上品', '古典的', '印刷物風', '端正']
   };
 
@@ -85,7 +92,10 @@
   }
 
   function languageReason(font, answers) {
-    if (font.languages?.[answers.language] !== 'supported') return null;
+    const status = font.languages?.[answers.language] || 'unknown';
+    if (status === 'partial') return `${LANGUAGE_LABEL[answers.language]}に一部対応`;
+    if (status === 'unknown') return 'この言語への対応は未確認';
+    if (status === 'unsupported') return 'この言語には非対応';
     if (answers.language === 'japanese' && ['writing', 'reading'].includes(answers.purpose)) {
       return '日本語の長文向け';
     }
@@ -139,7 +149,8 @@
       uniqueFonts.push(font);
     }
 
-    return uniqueFonts
+    const maximum = Math.max(0, Math.min(3, Number(limit) || 0));
+    const scoredFonts = uniqueFonts
       .map((font, index) => ({
         font,
         index,
@@ -147,10 +158,23 @@
           + purposeScore(font, answers.purpose)
           + moodScore(font, answers.mood),
         reasons: recommendationReasons(font, answers)
-      }))
-      .sort((a, b) => b.score - a.score || a.index - b.index)
-      .slice(0, Math.max(0, Math.min(3, Number(limit) || 0)))
-      .map((result, index) => ({ ...result, rank: index + 1 }));
+      }));
+    const languageStatus = (result) => result.font.languages?.[answers.language] || 'unknown';
+    const candidateGroups = [
+      scoredFonts.filter((result) => ['supported', 'partial'].includes(languageStatus(result))),
+      scoredFonts.filter((result) => languageStatus(result) === 'unknown'),
+      scoredFonts.filter((result) => languageStatus(result) === 'unsupported')
+    ];
+    const selected = [];
+    for (const group of candidateGroups) {
+      group.sort((a, b) => b.score - a.score || a.index - b.index);
+      for (const result of group) {
+        if (selected.length >= maximum) break;
+        selected.push(result);
+      }
+      if (selected.length >= maximum) break;
+    }
+    return selected.map((result, index) => ({ ...result, rank: index + 1 }));
   }
 
   const api = {

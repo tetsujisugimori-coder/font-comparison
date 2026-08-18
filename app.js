@@ -173,52 +173,42 @@ function buildOpenTypeProfile(fontId) {
 const webFontCatalog = {
   'noto-sans-jp-web': {
     displayName: 'Noto Sans JP', family: 'Noto Sans JP', cssFamily: '"Noto Sans JP", sans-serif',
-    memoCssFamily: '"Noto Sans JP", "Yu Gothic UI", "Hiragino Sans", Meiryo, sans-serif',
     cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+JP', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal']
   },
   'noto-serif-jp-web': {
     displayName: 'Noto Serif JP', family: 'Noto Serif JP', cssFamily: '"Noto Serif JP", serif',
-    memoCssFamily: '"Noto Serif JP", "Yu Mincho", "Hiragino Mincho ProN", "MS PMincho", serif',
     cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Serif+JP', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal']
   },
   'noto-sans-sc-web': {
     displayName: 'Noto Sans SC', family: 'Noto Sans SC', cssFamily: '"Noto Sans SC", sans-serif',
-    memoCssFamily: '"Noto Sans SC", "Microsoft YaHei", "PingFang SC", sans-serif',
     cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+SC', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['簡体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal']
   },
   'noto-sans-tc-web': {
     displayName: 'Noto Sans TC', family: 'Noto Sans TC', cssFamily: '"Noto Sans TC", sans-serif',
-    memoCssFamily: '"Noto Sans TC", "Microsoft JhengHei", "PingFang TC", sans-serif',
     cssUrl: 'https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+TC', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['繁体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal']
   },
   'source-han-sans-web': {
     displayName: 'Source Han Sans', family: 'Source Han Sans CN', cssFamily: '"Source Han Sans CN", sans-serif',
-    memoCssFamily: '"Source Han Sans CN", "Noto Sans SC", "Microsoft YaHei", sans-serif',
     sourceUrl: 'https://github.com/adobe-fonts/source-han-sans/tree/2.005R', provider: 'Adobe Source Han Sans 2.005R', license: 'SIL Open Font License 1.1', officialScripts: ['簡体字中国語', 'ラテン'], weights: [400, 700], styles: ['normal'], fontFiles: { 400: 'https://cdn.jsdelivr.net/gh/adobe-fonts/source-han-sans@2.005R/SubsetOTF/CN/SourceHanSansCN-Regular.otf', 700: 'https://cdn.jsdelivr.net/gh/adobe-fonts/source-han-sans@2.005R/SubsetOTF/CN/SourceHanSansCN-Bold.otf' }
   },
   'inter-web': {
     displayName: 'Inter', family: 'Inter', cssFamily: 'Inter, sans-serif',
-    memoCssFamily: 'Inter, "Segoe UI", Arial, sans-serif',
     cssUrl: 'https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Inter', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal']
   },
   'ibm-plex-sans-web': {
     displayName: 'IBM Plex Sans', family: 'IBM Plex Sans', cssFamily: '"IBM Plex Sans", sans-serif',
-    memoCssFamily: '"IBM Plex Sans", "Segoe UI", Arial, sans-serif',
     cssUrl: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/IBM+Plex+Sans', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal']
   },
   'jetbrains-mono-web': {
     displayName: 'JetBrains Mono', family: 'JetBrains Mono', cssFamily: '"JetBrains Mono", monospace',
-    memoCssFamily: '"JetBrains Mono", "Cascadia Code", Consolas, monospace',
     cssUrl: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/JetBrains+Mono', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['ラテン'], weights: [400, 700], styles: ['normal']
   },
   'zen-kaku-gothic-new-web': {
     displayName: 'Zen Kaku Gothic New', family: 'Zen Kaku Gothic New', cssFamily: '"Zen Kaku Gothic New", sans-serif',
-    memoCssFamily: '"Zen Kaku Gothic New", "Yu Gothic UI", "Hiragino Sans", Meiryo, sans-serif',
     cssUrl: 'https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Zen+Kaku+Gothic+New', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal']
   },
   'shippori-mincho-web': {
     displayName: 'Shippori Mincho', family: 'Shippori Mincho', cssFamily: '"Shippori Mincho", serif',
-    memoCssFamily: '"Shippori Mincho", "Yu Mincho", "Hiragino Mincho ProN", "MS PMincho", serif',
     cssUrl: 'https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;700&display=swap', sourceUrl: 'https://fonts.google.com/specimen/Shippori+Mincho', provider: 'Google Fonts', license: 'SIL Open Font License 1.1', officialScripts: ['日本語', 'ラテン'], weights: [400, 700], styles: ['normal']
   }
 };
@@ -433,58 +423,50 @@ const fonts = [
   })
 ];
 
-const fontIntegrationMetadata = {
+const recommendationCatalog = window.FontRecommendationCatalog?.FONT_OPTIONS || [];
+const recommendationMetadataById = new Map(recommendationCatalog.map((font) => [font.id, font]));
+
+const fontCardSupplementalMetadata = {
   'segoe-ui': {
-    memoCssFamily: '"Segoe UI", "Yu Gothic UI", sans-serif',
     categoryType: 'sans-serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'yu-gothic-ui': {
-    memoCssFamily: '"Yu Gothic UI", "Hiragino Sans", Meiryo, system-ui, sans-serif',
     categoryType: 'sans-serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   meiryo: {
-    memoCssFamily: 'Meiryo, "Yu Gothic UI", sans-serif',
     categoryType: 'sans-serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'ms-mincho': {
-    memoCssFamily: '"ＭＳ 明朝", "MS Mincho", serif',
     categoryType: 'serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'supported', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   consolas: {
-    memoCssFamily: 'Consolas, "Courier New", monospace',
     categoryType: 'monospace',
     recommendedFor: ['code'],
     languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'cascadia-code': {
-    memoCssFamily: '"Cascadia Code", Consolas, monospace',
     categoryType: 'monospace',
     recommendedFor: ['code'],
     languages: { latin: 'unknown', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'courier-new': {
-    memoCssFamily: '"Courier New", Consolas, monospace',
     categoryType: 'monospace',
     recommendedFor: ['code'],
     languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
   },
   'times-new-roman': {
-    memoCssFamily: '"Times New Roman", "ＭＳ 明朝", serif',
     categoryType: 'serif',
     recommendedFor: ['body', 'heading'],
     languages: { latin: 'supported', japanese: 'unknown', simplifiedChinese: 'unknown', traditionalChinese: 'unknown', korean: 'unknown' }
-  },
-  ...Object.fromEntries(Object.entries(webFontCatalog).map(([id, webFont]) => [id, {
-    memoCssFamily: webFont.memoCssFamily
-  }]))
+  }
 };
 
 const officialFontMetadata = {
@@ -646,13 +628,23 @@ function normalizeOpenTypeProfile(fontId) {
 }
 
 fonts.forEach((font) => {
-  Object.assign(font, fontIntegrationMetadata[font.id], officialFontMetadata[font.id]);
+  const recommendationMetadata = recommendationMetadataById.get(font.id);
+  if (!recommendationMetadata) throw new Error(`推薦用メタデータがありません: ${font.id}`);
+  Object.assign(font, fontCardSupplementalMetadata[font.id], {
+    memoCssFamily: recommendationMetadata.memoCssFamily
+  }, officialFontMetadata[font.id]);
   font.attributes = {
     ...font.attributes,
     fontFace: createFontFaceProfile(font),
     openType: normalizeOpenTypeProfile(font.id)
   };
   font.metadataConfirmedAt = '2026-08-18';
+});
+
+const recommendationFonts = recommendationCatalog.map((metadata) => {
+  const font = fonts.find((item) => item.id === metadata.id);
+  if (!font) throw new Error(`推薦用メタデータに未登録のフォントがあります: ${metadata.id}`);
+  return { ...font, ...metadata };
 });
 
 const samples = {
@@ -779,7 +771,7 @@ function renderRecommendationResults() {
 }
 
 function showRecommendations() {
-  currentRecommendations = recommendationApi.recommendFonts(fonts, recommendationAnswers(), 3);
+  currentRecommendations = recommendationApi.recommendFonts(recommendationFonts, recommendationAnswers(), 3);
   renderRecommendationResults();
   renderSelector();
   renderCards();

@@ -11,6 +11,7 @@ const integrationUtils = fs.readFileSync('integration-utils.js', 'utf8');
 const fontFaceDataSource = fs.readFileSync('font-face-data.js', 'utf8');
 const katexData = fs.readFileSync('katex-data.js', 'utf8');
 const katexPage = fs.readFileSync('katex-page.js', 'utf8');
+const { FONT_OPTIONS } = require('./font-recommendation-catalog');
 
 function appFunction(name, nextName) {
   const start = app.indexOf(`function ${name}(`);
@@ -34,7 +35,7 @@ test('Memo Nexus連携パネルは通常起動時に非表示で戻る操作だ�
   assert.doesNotMatch(html, /id="recommendedOnly"/);
   assert.doesNotMatch(html, /この用途への推奨だけ表示/);
   assert.match(html, /integration-utils\.js/);
-  assert.match(html, /font-recommendation\.js[\s\S]*app\.js/);
+  assert.match(html, /font-recommendation-catalog\.js[\s\S]*font-recommendation\.js[\s\S]*app\.js/);
 });
 
 test('通常・連携モードで共用する単一の条件検索UIを持つ', () => {
@@ -64,7 +65,7 @@ test('受け取った比較文章はtextContentまたは安全な文字描画を
 
 test('連携モードでは推薦3件を先頭へ並べても全フォントを残し、明示選択後だけ戻す', () => {
   assert.match(app, /state\.selectedIds = fonts\.map/);
-  assert.match(app, /recommendationApi\.recommendFonts\(fonts, recommendationAnswers\(\), 3\)/);
+  assert.match(app, /recommendationApi\.recommendFonts\(recommendationFonts, recommendationAnswers\(\), 3\)/);
   assert.match(app, /const selectedFonts = orderedFonts\(fonts\.filter\(\(font\) => state\.selectedIds\.includes\(font\.id\)\)\)/);
   assert.match(app, /推薦\$\{recommendation\.rank\}位/);
   assert.match(app, /recommendation\.reasons\.map/);
@@ -116,6 +117,15 @@ test('未確認情報を未対応と断定せず公式メタデータと分け�
   assert.match(app, /Microsoft製品付属（再配布は別途ライセンス確認）/);
   assert.match(app, /収録文字情報は未確認です。通常濃度の文字も収録済みとは判定していません。/);
   assert.match(app, /公式情報:/);
+});
+
+test('推薦契約をカード表示メタデータから分離し、Memo Nexus順の18件を検索だけに使う', () => {
+  assert.equal(FONT_OPTIONS.length, 18);
+  assert.match(app, /const fontCardSupplementalMetadata =/);
+  assert.match(app, /const recommendationMetadataById = new Map/);
+  assert.match(app, /const recommendationFonts = recommendationCatalog\.map/);
+  assert.match(app, /return \{ \.\.\.font, \.\.\.metadata \}/);
+  assert.match(app, /memoCssFamily: recommendationMetadata\.memoCssFamily/);
 });
 
 test('収録判定データと文字判定スクリプトをapp.jsより先に読み込む', () => {
@@ -229,9 +239,8 @@ test('追加Webフォントは共通カタログで定義し、初期HTMLでは�
   for (const id of webFontIds) {
     assert.match(app, new RegExp(`'${id}'`));
   }
-  assert.equal((catalog.match(/memoCssFamily:/g) || []).length, 10);
-  assert.match(app, /const fontIntegrationMetadata =/);
-  assert.match(app, /Object\.entries\(webFontCatalog\)[\s\S]*memoCssFamily: webFont\.memoCssFamily/);
+  assert.doesNotMatch(catalog, /memoCssFamily:/);
+  assert.equal(FONT_OPTIONS.filter((font) => font.sourceType === 'web').length, 10);
   assert.doesNotMatch(html, /family=Noto\+Sans\+JP/);
   assert.match(app, /function loadWebFont\(font/);
   assert.match(app, /document\.createElement\('link'\)/);

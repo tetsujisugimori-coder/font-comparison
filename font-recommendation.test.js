@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const test = require('node:test');
 
+const { FONT_OPTIONS } = require('./font-recommendation-catalog');
 const { languageStatusScore, recommendFonts } = require('./font-recommendation');
 
 function font(id, options = {}) {
@@ -78,6 +79,58 @@ test('unknownをunsupportedと同一視せず、未確認は非対応より上�
     font('unknown-font', { languages: { japanese: 'unknown' } })
   ], { language: 'japanese', mood: 'neutral', purpose: 'writing' });
   assert.equal(results[0].font.id, 'unknown-font');
+});
+
+test('supportedとpartialが3件あればunknownを混ぜず、グループ内だけを採点する', () => {
+  const results = recommendFonts([
+    font('partial-first', { recommendedFor: [], languages: { japanese: 'partial' } }),
+    font('supported-second', { recommendedFor: [], languages: { japanese: 'supported' } }),
+    font('partial-third', { recommendedFor: [], languages: { japanese: 'partial' } }),
+    font('unknown-high-score', { languages: { japanese: 'unknown' }, impression: ['読みやすい'], uses: ['本文', '長文'] })
+  ], { language: 'japanese', mood: 'neutral', purpose: 'writing' });
+  assert.equal(results.length, 3);
+  assert.equal(results.some((result) => result.font.id === 'unknown-high-score'), false);
+  assert.equal(results.every((result) => ['supported', 'partial'].includes(result.font.languages.japanese)), true);
+});
+
+test('preferredが不足する時だけunknownを補い、さらに不足する時だけunsupportedを使う', () => {
+  const results = recommendFonts([
+    font('unsupported-first', { languages: { japanese: 'unsupported' } }),
+    font('unknown-first', { languages: { japanese: 'unknown' } }),
+    font('partial-first', { languages: { japanese: 'partial' } }),
+    font('unknown-second', { languages: { japanese: 'unknown' } })
+  ], { language: 'japanese', mood: 'neutral', purpose: 'writing' });
+  assert.deepEqual(results.map((result) => result.font.id), ['partial-first', 'unknown-first', 'unknown-second']);
+
+  const withUnsupported = recommendFonts([
+    font('unsupported-first', { languages: { japanese: 'unsupported' } }),
+    font('unknown-first', { languages: { japanese: 'unknown' } }),
+    font('partial-first', { languages: { japanese: 'partial' } })
+  ], { language: 'japanese', mood: 'neutral', purpose: 'writing' });
+  assert.deepEqual(withUnsupported.map((result) => result.font.id), ['partial-first', 'unknown-first', 'unsupported-first']);
+});
+
+test('partial・unknown・unsupportedの理由に言語状態を優先して表示する', () => {
+  const answers = { language: 'japanese', mood: 'neutral', purpose: 'writing' };
+  const reasonFor = (status) => recommendFonts([
+    font(`${status}-font`, { languages: { japanese: status }, impression: ['読みやすい'], uses: ['本文', '長文'] })
+  ], answers, 1)[0].reasons;
+  assert.match(reasonFor('partial').join(' '), /一部対応/);
+  assert.match(reasonFor('unknown').join(' '), /未確認/);
+  assert.match(reasonFor('unsupported').join(' '), /非対応/);
+});
+
+test('実18フォントではMemo Nexusと同じ代表5条件の上位3件を返す', () => {
+  const cases = [
+    [{ language: 'japanese', mood: 'neutral', purpose: 'writing' }, ['yu-gothic-ui', 'meiryo', 'noto-sans-jp-web']],
+    [{ language: 'japanese', mood: 'formal', purpose: 'writing' }, ['ms-mincho', 'noto-serif-jp-web', 'shippori-mincho-web']],
+    [{ language: 'simplifiedChinese', mood: 'neutral', purpose: 'writing' }, ['noto-sans-sc-web', 'source-han-sans-web', 'noto-sans-tc-web']],
+    [{ language: 'traditionalChinese', mood: 'neutral', purpose: 'writing' }, ['noto-sans-tc-web', 'noto-sans-sc-web', 'source-han-sans-web']],
+    [{ language: 'latin', mood: 'neutral', purpose: 'code' }, ['consolas', 'cascadia-code', 'jetbrains-mono-web']]
+  ];
+  for (const [answers, expectedIds] of cases) {
+    assert.deepEqual(recommendFonts(FONT_OPTIONS, answers).map((result) => result.font.id), expectedIds);
+  }
 });
 
 test('常に重複しない最大3件を返す', () => {

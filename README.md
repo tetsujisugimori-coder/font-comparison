@@ -142,6 +142,7 @@ node scripts/measure-analysis-data.mjs
 - `index.html`: 画面とスクリプト読込
 - `style.css`: 通常表示、薄い文字、凡例、レスポンシブ、ダークモード
 - `app.js`: フォント情報、カード、4表示モード、Memo Nexus連携UI
+- `font-recommendation-catalog.js`: Memo Nexusと照合した18フォントの推薦用メタデータと連携用`font-family`
 - `font-recommendation.js`: 通常表示とMemo Nexus連携で共用する条件検索の純粋な採点・上位3件選出
 - `font-coverage.js`: 3状態判定、範囲の二分探索、安全な書記素クラスタ単位DOM描画
 - `font-coverage-data.js`: 生成済みcmap範囲データ
@@ -168,6 +169,7 @@ python -m http.server 4173 --bind 127.0.0.1
 ```powershell
 node --check app.js
 node --check integration-utils.js
+node --check font-recommendation-catalog.js
 node --check font-recommendation.js
 node --check font-coverage.js
 node --check opentype-dialog.js
@@ -192,7 +194,9 @@ python -m unittest test_analyze_google_fonts.py
 
 戻り先はMemo Nexus公開URLとlocalhost／127.0.0.1だけを許可します。比較文章はHTMLとして挿入せず、テキストノードと未収録文字用の `span` だけをDOM APIで生成します。
 
-「条件からフォントを探す」は通常表示と連携モードで同じフォーム、結果欄、変更イベントを共用します。初期条件は日本語、中立・読みやすさ重視、長文を書くで、起動時から順位・種別・理由・操作付きの上位3件を表示し、ラジオ変更時に自動更新します。`target=body|heading|code`は連携モードの主な用途を長文を書く／見出し・短文／プログラミングコードへ上書きし、言語と雰囲気の既定値は維持します。推薦は`languages`、`categoryType`、`recommendedFor`、`impression`、`uses`と明示的な雰囲気プロファイルを採点し、`unknown`を`unsupported`として扱いません。
+「条件からフォントを探す」は通常表示と連携モードで同じフォーム、結果欄、変更イベントを共用します。初期条件は日本語、中立・読みやすさ重視、長文を書くで、起動時から順位・種別・理由・操作付きの上位3件を表示し、ラジオ変更時に自動更新します。`target=body|heading|code`は連携モードの主な用途を長文を書く／見出し・短文／プログラミングコードへ上書きし、言語と雰囲気の既定値は維持します。
+
+推薦はMemo Nexus PR #114の`FONT_OPTIONS`と照合した`font-recommendation-catalog.js`を使い、カード表示・cmap解析用情報とは分離します。対象言語が`supported`または`partial`の候補を先に採点し、3件に満たない場合だけ`unknown`、それでも不足する場合だけ`unsupported`を補います。各段階内は言語・雰囲気・用途の点数とカタログ順で決定し、理由には一部対応、未確認、非対応の言語状態を明示します。
 
 通常表示の候補操作は既存の比較対象へフォントを追加し、候補外を含む現在の比較対象を維持します。連携モードでは全18カードを残して推薦3件だけを先頭へ並べ、候補またはカードの操作で連携用の選択フォントを更新します。選択だけでは遷移せず、「Memo Nexusで使用」を押した時だけ検証済みURLへ結果を返します。
 
@@ -200,7 +204,7 @@ python -m unittest test_analyze_google_fonts.py
 
 戻り先が不正な場合はエラーを表示して「Memo Nexusで使用」を無効にし、現在の比較状態は保持します。
 
-次の10Webフォントは、`webFontCatalog`の`id`、表示名、`memoCssFamily`、読込定義を対応させ、Memo Nexus戻りURLの`fontId`／`fontFamily`／`fontLabel`へ設定できます。Memo Nexus側でも同じIDと`font-family`を登録してから受け入れる契約です。
+次の10Webフォントを含む全18フォントは、`font-recommendation-catalog.js`をID、表示名、推薦用メタデータ、Memo Nexus連携用`font-family`の単一情報源にします。`webFontCatalog`はブラウザでの読込定義だけを保持します。戻りURLには契約どおりの`fontId`／`fontFamily`／`fontLabel`を設定します。
 
 - Noto Sans JP (`noto-sans-jp-web`)
 - Noto Serif JP (`noto-serif-jp-web`)
@@ -213,7 +217,7 @@ python -m unittest test_analyze_google_fonts.py
 - Zen Kaku Gothic New (`zen-kaku-gothic-new-web`)
 - Shippori Mincho (`shippori-mincho-web`)
 
-2026-08-19の確認では、`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation.js`、`node --test`（95件）、`git diff --check`が成功しました。実ブラウザでは通常起動時の既定3候補、ラジオ変更による即時更新、既存3カードを保った候補追加、明示選択前stylesheet 0件・Webフォント選択後1件を確認しました。連携モードでは単一フォーム、全18カード、targetによる用途初期値、選択だけでは遷移しないこと、戻り操作で`fontSource`、用途、範囲、ID、表示名、メモIDを返すこと、不正URLで比較を維持したエラー表示、XSS風サンプルの非実行、コピーUI 0件を確認しました。全10Webフォントの戻りURL生成は自動テストで確認し、実ブラウザのWebフォント読込は代表例に限定しました。公開済みMemo Nexusとの実アプリ間往復は、受入側の対応状況が同時に確認できないため未確認です。
+2026-08-19の確認では、`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation-catalog.js`、`node --check font-recommendation.js`、`node --test`（103件）、`git diff --check`が成功しました。実18フォントの自動テストでは、日本語・中立・長文はYu Gothic UI／Meiryo／Noto Sans JP、日本語・フォーマル・長文はMS Mincho／Noto Serif JP／Shippori Mincho、簡体字・中立・長文はNoto Sans SC／Source Han Sans／Noto Sans TC、繁体字・中立・長文はNoto Sans TC／Noto Sans SC／Source Han Sans、英数字・中立・コードはConsolas／Cascadia Code／JetBrains Monoになりました。実ブラウザでは日本語初期、簡体字、繁体字、英数字コードを確認しました。条件変更中のWebフォントstylesheetは0件、明示選択後だけ1件で、通常表示の比較追加、連携モードの同一順序・全18カード・非自動遷移、XSS風サンプルの文字表示、コピーUI 0件、OSダーク表示も確認しました。390px／タブレット幅／PC幅、ライト表示、コンソール出力は最終ブラウザ確認で再取得していません。公開済みMemo Nexusとの実アプリ間往復も未確認です。
 
 ## 公式情報とライセンス
 

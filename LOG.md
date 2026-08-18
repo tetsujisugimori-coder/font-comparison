@@ -1,3 +1,14 @@
+## 2026-08-19 Memo Nexus推薦契約と段階選出の統一
+
+- 原因: Font Comparisonは全言語状態を合計点だけで並べ、カード表示用の`languages`、`impression`、`uses`も推薦に流用していたため、Memo Nexus PR #114と候補群・スコア・カタログ順が一致しなかった。特に中立キーワードの「中立」が欠け、簡体字・繁体字の`partial`と欧文系の`unsupported`も契約値と異なっていた。
+- `font-recommendation-catalog.js`を追加し、Memo Nexusの`FONT_OPTIONS`を正として全18件のID、表示名、種別、分類、用途、言語状態、印象、利用目的、連携用`font-family`、カタログ順を照合した。カード説明・cmap・OpenType情報は上書きせず、推薦専用カタログとして分離した。
+- 推薦候補を`supported`／`partial`、`unknown`、`unsupported`の3段階に分け、前段階だけで3件に満たない場合に限って次段階を補う方式へ変更した。各段階内は従来の言語・雰囲気・用途スコアとカタログ順を使い、最大3件・重複排除・同点安定順を維持した。
+- 推薦理由は言語状態を優先し、`partial`は「一部対応」、`unknown`は「未確認」、`unsupported`は「非対応」を最大2理由の中に必ず含めるようにした。
+- 実データの上位3件は、日本語・中立・長文がYu Gothic UI／Meiryo／Noto Sans JP、日本語・フォーマル・長文がMS Mincho／Noto Serif JP／Shippori Mincho、簡体字・中立・長文がNoto Sans SC／Source Han Sans／Noto Sans TC、繁体字・中立・長文がNoto Sans TC／Noto Sans SC／Source Han Sans、英数字・中立・コードがConsolas／Cascadia Code／JetBrains Monoになり、Memo Nexusと一致した。
+- 自動テスト: 段階選出、各言語状態の理由、最大3件・重複排除・安定順、全18件の契約、代表5条件、全18件の戻りURL、既存UI回帰を追加・更新した。`node --check app.js`、`node --check integration-utils.js`、`node --check font-recommendation-catalog.js`、`node --check font-recommendation.js`、`node --test`（103件、失敗0件）、`git diff --check`が成功した。
+- 実ブラウザ: 通常表示で日本語初期・簡体字・繁体字・英数字コードの順序を確認し、連携モードでも簡体字・繁体字が同順だった。条件変更中はWebフォントstylesheet 0件、明示選択後だけ1件、通常表示は既存比較へ追加、連携表示は全18カードを維持して選択だけでは遷移しないこと、XSS風文章の文字表示、コピーUI 0件、OSダークで理由と一部対応表示が読めることを確認した。
+- 未確認: 390px／タブレット幅／PC幅、ライト表示、コンソールerror／warningは最終ブラウザ確認で再取得していない。公開済みMemo Nexusとの実アプリ間往復も未確認。
+
 ## 2026-08-19 共通条件検索UIと連携コピー機能の削除
 
 - Memo Nexus連携パネル内にあった推薦アンケートを「条件からフォントを探す」として独立させ、通常表示と連携モードで同じフォーム、結果欄、変更イベントを共用する構造へ変更した。フォームは1つだけで、送信ボタンを廃止し、条件変更時に自動更新する。

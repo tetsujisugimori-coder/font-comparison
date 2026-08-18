@@ -1,7 +1,6 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const fs = require('node:fs');
 const test = require('node:test');
 
 const {
@@ -10,8 +9,7 @@ const {
   isAllowedReturnUrl,
   parseMemoNexusParams
 } = require('./integration-utils');
-
-const app = fs.readFileSync('app.js', 'utf8');
+const { FONT_OPTIONS } = require('./font-recommendation-catalog');
 
 const fontIds = ['yu-gothic-ui', 'consolas'];
 const font = {
@@ -105,7 +103,7 @@ test('全10WebフォントのID・表示名・font-familyを戻りURLへ設定�
     errors: []
   };
   for (const webFont of webFonts) {
-    assert.equal(app.includes(`memoCssFamily: '${webFont.memoCssFamily}'`), true, `${webFont.id} must use the tested font-family`);
+    assert.equal(FONT_OPTIONS.find((fontOption) => fontOption.id === webFont.id).memoCssFamily, webFont.memoCssFamily);
     const url = new URL(buildMemoNexusReturnUrl(context, webFont));
     assert.equal(url.searchParams.get('fontId'), webFont.id);
     assert.equal(url.searchParams.get('fontLabel'), webFont.name);
@@ -133,4 +131,20 @@ test('不正な戻り先では遷移URLを作らない', () => {
     errors: []
   };
   assert.throws(() => buildMemoNexusReturnUrl(context, font), /安全なMemo Nexus/);
+});
+
+test('推薦契約の全18フォントを同じID・表示名・font-familyで戻せる', () => {
+  const context = {
+    target: 'body',
+    scope: 'global',
+    returnUrl: 'https://tetsujisugimori-coder.github.io/memo/',
+    memoId: 'memo-contract',
+    errors: []
+  };
+  for (const contractFont of FONT_OPTIONS) {
+    const url = new URL(buildMemoNexusReturnUrl(context, contractFont));
+    assert.equal(url.searchParams.get('fontId'), contractFont.id);
+    assert.equal(url.searchParams.get('fontLabel'), contractFont.name);
+    assert.equal(url.searchParams.get('fontFamily'), contractFont.memoCssFamily);
+  }
 });
