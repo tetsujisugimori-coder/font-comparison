@@ -24,3 +24,25 @@ test('バージョンは単数または集約結果をそのまま表示し、�
   assert.equal(metadata.formatFontVersion({ fontVersions: ['Version 1', 'Version 2'] }), 'Version 1 / Version 2');
   assert.equal(metadata.safeUnparsedReason({}), 'フォントファイルを確認できていません。');
 });
+
+test('WeightとStyleはファミリー共通モデルで、読み込み済み情報と未確認情報を分ける', () => {
+  const profile = metadata.createFontFaceProfile({
+    family: 'Example Sans',
+    loadedWeights: [700, 400, 700],
+    loadedStyles: [{ value: 'normal', native: true }]
+  });
+  assert.equal(profile.family, 'Example Sans');
+  assert.deepEqual([...profile.loadedWeights], [400, 700]);
+  assert.equal(metadata.formatWeightSummary(profile), 'Regular 400 / Bold 700（このアプリで読み込み確認済み。ファミリー全体は未確認）');
+  assert.equal(metadata.formatStyleSummary(profile), 'Normal（このアプリで読み込み確認済み）');
+  assert.equal(metadata.formatWeightSummary(metadata.createFontFaceProfile({ family: 'Unknown' })), '未確認');
+  assert.equal(metadata.formatStyleSummary(metadata.createFontFaceProfile({ family: 'Unknown' })), '未確認');
+});
+
+test('擬似Italicは専用Italic対応として表示しない', () => {
+  const profile = metadata.createFontFaceProfile({
+    family: 'Example Sans',
+    syntheticStyles: ['italic']
+  });
+  assert.equal(metadata.formatStyleSummary(profile), '専用Styleは未確認');
+});

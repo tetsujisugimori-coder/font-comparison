@@ -1,3 +1,10 @@
+## 2026-08-18 Font FamilyのWeight / Style表示追加
+
+- 既存のフォントメタデータ補助とカードの属性リストを拡張し、全フォントでFont Family、Weight、Styleを同じ情報モデルとして表示するようにした。
+- Weightはファミリー全体で利用可能な値と、このアプリで読み込み確認済みの値を分離できる構造にした。Noto Sans JPは既存のGoogle Fonts CSS設定に基づきRegular 400 / Bold 700を読み込み確認済みとして表示し、ファミリー全体は未確認のままとした。
+- Styleは専用書体と擬似Styleを分離できる構造にし、専用Italicを確認できないフォントをItalic対応とは表示しない。既存システムフォントのファミリー内Weight / Styleは根拠がないため未確認とした。
+- フォントカード、OpenType機能、cmap収録情報の既存構造を維持し、フォント追加・再解析・生成データ更新は行っていない。
+
 ## 2026-08-18 PR #7: cmap/ OpenType情報分離とCI追加
 
 - 原因: カードの「解析フォント」は `font-coverage-data.js` のcmap解析結果をOpenType解析結果のように混在表示していた。

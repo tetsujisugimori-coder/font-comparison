@@ -115,6 +115,24 @@ test('Webフォントも同じカード構造でOpenType情報を扱う', () => 
   assert.match(html, /fonts\.googleapis\.com/);
 });
 
+test('WeightとStyleは全カード共通のFont Family情報として表示する', () => {
+  assert.match(app, /fontFace: createFontFaceProfile\(font\)/);
+  assert.match(app, /Font Family:/);
+  assert.match(app, /Weight:/);
+  assert.match(app, /Style:/);
+  assert.match(app, /function createFontFaceProfile\(font\)/);
+  assert.match(app, /loadedWeights: metadata\.loadedWeights \|\| font\.delivery\?\.weights/);
+  assert.match(app, /loadedStyles: \[\{ value: 'normal', native: true \}\]/);
+  assert.doesNotMatch(app, /noto-sans-jp-web[\s\S]*?if \(font\.id === 'noto-sans-jp-web'\)/);
+});
+
+test('Weight・Style情報は既存の属性リストと狭幅対応を使い、Italicを推測表示しない', () => {
+  assert.match(app, /fontFaceInfoRows\(font\)/);
+  assert.match(css, /\.font-card\s*\{[\s\S]*?min-width:\s*0/);
+  assert.match(css, /\.attribute-list li\s*\{[\s\S]*?overflow-wrap:\s*anywhere/);
+  assert.doesNotMatch(app, /Italic対応/);
+});
+
 test('OpenType機能ダイアログにはボタン、一覧、説明欄の要素があり、同一ダイアログを再利用する', () => {
   assert.match(html, /id="openTypeFeatureDialog"/);
   assert.match(html, /openTypeFeatureDialogSummary/);

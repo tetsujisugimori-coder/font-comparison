@@ -547,6 +547,9 @@ const officialFontMetadata = {
       weights: ['400', '700'],
       details: '文字種ごとにサブセット配信される可能性があります。ブラウザ・言語環境で実際の配信ファイルが異なる場合があります。'
     },
+    fontFaceMetadata: {
+      loadedStyles: [{ value: 'normal', native: true }]
+    },
     officialScripts: ['日本語', 'ラテン'],
     license: 'SIL Open Font License 1.1',
     sourceUrl: 'https://fonts.google.com/noto/specimen/Noto+Sans+JP'
@@ -559,13 +562,15 @@ function normalizeOpenTypeProfile(fontId) {
   return buildOpenTypeProfile(fontId);
 }
 
-fonts.forEach((font) => Object.assign(font, memoFontMetadata[font.id], officialFontMetadata[font.id], {
-  attributes: {
+fonts.forEach((font) => {
+  Object.assign(font, memoFontMetadata[font.id], officialFontMetadata[font.id]);
+  font.attributes = {
     ...font.attributes,
+    fontFace: createFontFaceProfile(font),
     openType: normalizeOpenTypeProfile(font.id)
-  },
-  metadataConfirmedAt: '2026-08-18'
-}));
+  };
+  font.metadataConfirmedAt = '2026-08-18';
+});
 
 const samples = {
   normal: [
@@ -837,6 +842,36 @@ function safeCoverageReason(coverage) {
   return window.FontMetadata?.safeUnparsedReason(coverage) || 'フォントファイルを確認できていません。';
 }
 
+function createFontFaceProfile(font) {
+  const metadata = font.fontFaceMetadata || {};
+  return window.FontMetadata?.createFontFaceProfile({
+    family: metadata.family || font.name,
+    availableWeights: metadata.availableWeights,
+    loadedWeights: metadata.loadedWeights || font.delivery?.weights,
+    availableStyles: metadata.availableStyles,
+    loadedStyles: metadata.loadedStyles,
+    syntheticStyles: metadata.syntheticStyles
+  }) || {
+    family: font.name,
+    availableWeights: [],
+    loadedWeights: [],
+    availableStyles: [],
+    loadedStyles: [],
+    syntheticStyles: []
+  };
+}
+
+function fontFaceInfoRows(font) {
+  const profile = font.attributes?.fontFace || createFontFaceProfile(font);
+  const weight = window.FontMetadata?.formatWeightSummary(profile) || '未確認';
+  const style = window.FontMetadata?.formatStyleSummary(profile) || '未確認';
+  return `
+    <li>Font Family: ${escapeHtml(profile.family)}</li>
+    <li>Weight: ${escapeHtml(weight)}</li>
+    <li>Style: ${escapeHtml(style)}</li>
+  `;
+}
+
 function openTypeAnalysisTarget(meta) {
   const target = [meta.fileName, formatFontVersion(meta)];
   if (shouldDisplayInternalFace(meta)) target.splice(1, 0, `${meta.faceName}（faceIndex ${meta.faceIndex}）`);
@@ -991,6 +1026,7 @@ function renderCards() {
             <li>文字幅: ${escapeHtml(font.attributes.width)}</li>
             <li>書体分類: ${escapeHtml(font.attributes.classification)}</li>
             <li>利用環境: ${escapeHtml(font.attributes.environment)}</li>
+            ${fontFaceInfoRows(font)}
             <li>取得元: ${escapeHtml(font.fontOrigin)} / ${escapeHtml(font.attributes.sourceKind)} (${escapeHtml(font.attributes.source)})</li>
             <li>${openTypeFeatureSummaryText(font)}</li>
             ${officialMetadataHtml(font)}
