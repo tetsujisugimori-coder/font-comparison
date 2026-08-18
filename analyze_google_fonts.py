@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 from collections.abc import Callable, Iterable
 from datetime import date
 from pathlib import Path
@@ -191,11 +192,78 @@ def load_javascript_data(path: Path, variable_name: str) -> dict[str, object]:
     return json.loads(match.group(1))
 
 
-def write_javascript_data(path: Path, variable_name: str, comment: str, data: dict[str, object]) -> None:
+def serialize_javascript_data(variable_name: str, comment: str, data: dict[str, object]) -> str:
     serialized = json.dumps(data, ensure_ascii=False, separators=(",", ":"))
-    temporary = path.with_name(f".{path.name}.tmp")
-    temporary.write_text(f"/* {comment} */\nwindow.{variable_name} = {serialized};\n", encoding="utf-8", newline="\n")
-    os.replace(temporary, path)
+    return f"/* {comment} */\nwindow.{variable_name} = {serialized};\n"
+
+
+def create_temporary_file(target: Path, contents: str, suffix: str = ".tmp") -> Path:
+    descriptor, temporary_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=suffix, dir=target.parent)
+    temporary = Path(temporary_name)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8", newline="\n") as output:
+            output.write(contents)
+    except Exception:
+        temporary.unlink(missing_ok=True)
+        raise
+    return temporary
+
+
+def validate_temporary_javascript_data(path: Path, variable_name: str) -> None:
+    data = load_javascript_data(path, variable_name)
+    fonts = data.get("fonts")
+    if not isinstance(fonts, dict) or FONT_ID not in fonts:
+        raise GoogleFontsAnalysisError(f"一時データに対象フォントIDがありません: {path}")
+    if not data.get("generatedAt"):
+        raise GoogleFontsAnalysisError(f"一時データにgeneratedAtがありません: {path}")
+
+
+def create_backup(target: Path, original: bytes | None) -> Path | None:
+    if original is None:
+        return None
+    descriptor, backup_name = tempfile.mkstemp(prefix=f".{target.name}.", suffix=".bak", dir=target.parent)
+    backup = Path(backup_name)
+    try:
+        with os.fdopen(descriptor, "wb") as output:
+            output.write(original)
+    except Exception:
+        backup.unlink(missing_ok=True)
+        raise
+    return backup
+
+
+def replace_prepared_outputs(prepared: list[tuple[Path, Path]]) -> None:
+    originals = {target: target.read_bytes() if target.exists() else None for _temporary, target in prepared}
+    backups: dict[Path, Path | None] = {}
+    replaced: list[Path] = []
+    try:
+        for _temporary, target in prepared:
+            backups[target] = create_backup(target, originals[target])
+        for temporary, target in prepared:
+            os.replace(temporary, target)
+            replaced.append(target)
+    except Exception as error:
+        rollback_errors: list[str] = []
+        for target in reversed(replaced):
+            try:
+                backup = backups.get(target)
+                if backup is None:
+                    target.unlink(missing_ok=True)
+                else:
+                    os.replace(backup, target)
+                    backups[target] = None
+            except Exception as rollback_error:
+                rollback_errors.append(f"{target}: {rollback_error}")
+        detail = f"生成データの置換に失敗しました: {error}"
+        if rollback_errors:
+            detail += f"; ロールバックにも失敗しました: {'; '.join(rollback_errors)}"
+        raise GoogleFontsAnalysisError(detail) from error
+    finally:
+        for temporary, _target in prepared:
+            temporary.unlink(missing_ok=True)
+        for backup in backups.values():
+            if backup is not None:
+                backup.unlink(missing_ok=True)
 
 
 def update_outputs(opentype_path: Path, coverage_path: Path, result: dict[str, dict[str, object]]) -> None:
@@ -206,8 +274,16 @@ def update_outputs(opentype_path: Path, coverage_path: Path, result: dict[str, d
     generated_at = str(result["openType"]["analysisDate"])
     opentype_data["generatedAt"] = generated_at
     coverage_data["generatedAt"] = generated_at
-    write_javascript_data(opentype_path, "FontOpenTypeData", "OpenType解析スクリプトで生成。フォントファイル自体は含みません。", opentype_data)
-    write_javascript_data(coverage_path, "FontCoverageData", "cmap解析スクリプトで生成。フォントファイル自体は含みません。", coverage_data)
+    prepared: list[tuple[Path, Path]] = []
+    try:
+        prepared.append((create_temporary_file(opentype_path, serialize_javascript_data("FontOpenTypeData", "OpenType解析スクリプトで生成。フォントファイル自体は含みません。", opentype_data)), opentype_path))
+        prepared.append((create_temporary_file(coverage_path, serialize_javascript_data("FontCoverageData", "cmap解析スクリプトで生成。フォントファイル自体は含みません。", coverage_data)), coverage_path))
+        validate_temporary_javascript_data(prepared[0][0], "FontOpenTypeData")
+        validate_temporary_javascript_data(prepared[1][0], "FontCoverageData")
+        replace_prepared_outputs(prepared)
+    finally:
+        for temporary, _target in prepared:
+            temporary.unlink(missing_ok=True)
 
 
 def parse_args() -> argparse.Namespace:

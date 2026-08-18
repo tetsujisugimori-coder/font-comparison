@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -65,6 +66,93 @@ class AnalysisMergeTests(unittest.TestCase):
                 self.assertEqual(subject.main(), 2)
             self.assertEqual(output.read_text(encoding="utf-8"), "old open type")
             self.assertEqual(coverage.read_text(encoding="utf-8"), "old coverage")
+
+
+class OutputUpdateTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        directory = Path(self.temporary.name)
+        self.opentype = directory / "font-opentype-data.js"
+        self.coverage = directory / "font-coverage-data.js"
+        self.opentype.write_text('window.FontOpenTypeData = {"generatedAt":"old","fonts":{"existing":{}}};\n', encoding="utf-8")
+        self.coverage.write_text('window.FontCoverageData = {"generatedAt":"old","fonts":{"existing":{}}};\n', encoding="utf-8")
+        self.original_opentype = self.opentype.read_text(encoding="utf-8")
+        self.original_coverage = self.coverage.read_text(encoding="utf-8")
+        self.result = {
+            "openType": {"analysisDate": "2026-08-18", "fontName": "Noto Sans JP", "status": "analyzed", "features": []},
+            "coverage": {"analysisDate": "2026-08-18", "fontName": "Noto Sans JP", "status": "analyzed", "ranges": []},
+        }
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    def assert_originals_and_no_artifacts(self) -> None:
+        self.assertEqual(self.opentype.read_text(encoding="utf-8"), self.original_opentype)
+        self.assertEqual(self.coverage.read_text(encoding="utf-8"), self.original_coverage)
+        self.assertEqual(list(Path(self.temporary.name).glob("*.tmp")), [])
+        self.assertEqual(list(Path(self.temporary.name).glob("*.bak")), [])
+
+    def test_normal_update_changes_both_outputs_with_matching_generated_at(self) -> None:
+        subject.update_outputs(self.opentype, self.coverage, self.result)
+        opentype = subject.load_javascript_data(self.opentype, "FontOpenTypeData")
+        coverage = subject.load_javascript_data(self.coverage, "FontCoverageData")
+        self.assertIn(subject.FONT_ID, opentype["fonts"])
+        self.assertIn(subject.FONT_ID, coverage["fonts"])
+        self.assertEqual(opentype["generatedAt"], coverage["generatedAt"])
+        self.assertEqual(list(Path(self.temporary.name).glob("*.tmp")), [])
+        self.assertEqual(list(Path(self.temporary.name).glob("*.bak")), [])
+
+    def test_first_temporary_creation_failure_keeps_both_outputs(self) -> None:
+        with patch.object(subject, "create_temporary_file", side_effect=OSError("first temporary failure")):
+            with self.assertRaises(OSError):
+                subject.update_outputs(self.opentype, self.coverage, self.result)
+        self.assert_originals_and_no_artifacts()
+
+    def test_second_temporary_creation_failure_keeps_both_outputs(self) -> None:
+        original = subject.create_temporary_file
+        calls = 0
+
+        def fail_second(target: Path, contents: str, suffix: str = ".tmp") -> Path:
+            nonlocal calls
+            calls += 1
+            if calls == 2:
+                raise OSError("second temporary failure")
+            return original(target, contents, suffix)
+
+        with patch.object(subject, "create_temporary_file", side_effect=fail_second):
+            with self.assertRaises(OSError):
+                subject.update_outputs(self.opentype, self.coverage, self.result)
+        self.assert_originals_and_no_artifacts()
+
+    def test_invalid_temporary_data_does_not_replace_outputs(self) -> None:
+        original = subject.create_temporary_file
+        calls = 0
+
+        def corrupt_first(target: Path, contents: str, suffix: str = ".tmp") -> Path:
+            nonlocal calls
+            calls += 1
+            temporary = original(target, contents, suffix)
+            if calls == 1:
+                temporary.write_text('window.FontOpenTypeData = {"generatedAt":"new","fonts":{}};\n', encoding="utf-8")
+            return temporary
+
+        with patch.object(subject, "create_temporary_file", side_effect=corrupt_first):
+            with self.assertRaisesRegex(subject.GoogleFontsAnalysisError, "対象フォントID"):
+                subject.update_outputs(self.opentype, self.coverage, self.result)
+        self.assert_originals_and_no_artifacts()
+
+    def test_second_replace_failure_rolls_back_first_output_and_cleans_up(self) -> None:
+        original_replace = os.replace
+
+        def fail_coverage_replace(source: str | Path, destination: str | Path) -> None:
+            if Path(destination) == self.coverage and Path(source).suffix == ".tmp":
+                raise OSError("coverage replace failure")
+            original_replace(source, destination)
+
+        with patch.object(subject.os, "replace", side_effect=fail_coverage_replace):
+            with self.assertRaisesRegex(subject.GoogleFontsAnalysisError, "coverage replace failure"):
+                subject.update_outputs(self.opentype, self.coverage, self.result)
+        self.assert_originals_and_no_artifacts()
 
     def test_css_fetch_failure_is_explicit(self) -> None:
         with patch("analyze_google_fonts.urlopen", side_effect=OSError("offline")), patch("analyze_google_fonts.shutil.which", return_value=None):

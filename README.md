@@ -59,9 +59,11 @@ python analyze_google_fonts.py
 
 `analyze_google_fonts.py` は固定User-Agentで `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap` を取得し、すべての `@font-face`、ウェイト、unicode-range、WOFF2 URLを解析します。各ファイルのSHA-256、cmap、GSUB／GPOSタグ、統合タグ、CSS取得日、取得ホストを `font-coverage-data.js` と `font-opentype-data.js` に記録します。全ファイルの取得・解析が成功した場合だけ両方の出力を更新し、フォントファイル自体はメモリ上だけで処理します。Notoのcmapは全WOFF2の統合結果であり、1回の閲覧でブラウザが全ファイルを取得するという意味ではありません。
 
+2つの生成JSは、更新後の内容を両方とも一時ファイルへ作成して再読込検証した後に置換します。置換途中で失敗した場合は、すでに置換した側を元の内容へロールバックし、一時ファイルとバックアップを後始末します。
+
 ## CIと手動ライブ解析
 
-`CI` はPR、mainへのpush、手動実行でNode 22とPython 3.12の構文検査、Nodeテスト、ネットワークを使わないPythonフィクスチャテスト、差分空白検査を実施します。
+`CI` はPR、mainへのpush、手動実行でNode 22とPython 3.12の構文検査、Nodeテスト、ネットワークを使わないPythonフィクスチャテスト、PRまたはコミット範囲の空白検査を実施します。引数なしの作業ツリー差分検査は使いません。PRではbase SHAからhead SHA、pushではbefore SHAからcurrent SHA、比較元を使えない手動実行では現在HEADを検査します。
 
 実際のGoogle Fontsを再解析する場合は、GitHub Actionsの **Live Google Fonts analysis** を手動実行し、`run_live_analysis` を有効にします。URL、実行日、User-Agent、ファイル数、版、機能数と生成データの差分をアーティファクトで取得します。このワークフローは読み取り専用で、コミット、プッシュ、フォントバイナリの保存を行いません。
 
