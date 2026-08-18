@@ -154,6 +154,30 @@ class OutputUpdateTests(unittest.TestCase):
                 subject.update_outputs(self.opentype, self.coverage, self.result)
         self.assert_originals_and_no_artifacts()
 
+    def test_rollback_failure_preserves_recovery_backup(self) -> None:
+        original_replace = os.replace
+
+        def fail_coverage_replace_and_rollback(source: str | Path, destination: str | Path) -> None:
+            source_path = Path(source)
+            destination_path = Path(destination)
+            if destination_path == self.coverage and source_path.suffix == ".tmp":
+                raise OSError("coverage replace failure")
+            if destination_path == self.opentype and source_path.suffix == ".bak":
+                raise OSError("opentype rollback failure")
+            original_replace(source, destination)
+
+        with patch.object(subject.os, "replace", side_effect=fail_coverage_replace_and_rollback):
+            with self.assertRaises(subject.GoogleFontsAnalysisError) as raised:
+                subject.update_outputs(self.opentype, self.coverage, self.result)
+
+        backups = list(Path(self.temporary.name).glob("*.bak"))
+        self.assertEqual(len(backups), 1)
+        self.assertIn(str(self.opentype), str(raised.exception))
+        self.assertIn(str(backups[0]), str(raised.exception))
+        self.assertIn("opentype rollback failure", str(raised.exception))
+        self.assertEqual(backups[0].read_text(encoding="utf-8"), self.original_opentype)
+        self.assertEqual(list(Path(self.temporary.name).glob("*.tmp")), [])
+
     def test_css_fetch_failure_is_explicit(self) -> None:
         with patch("analyze_google_fonts.urlopen", side_effect=OSError("offline")), patch("analyze_google_fonts.shutil.which", return_value=None):
             with self.assertRaisesRegex(subject.GoogleFontsAnalysisError, "取得に失敗"):

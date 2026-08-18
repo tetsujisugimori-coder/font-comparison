@@ -236,6 +236,7 @@ def replace_prepared_outputs(prepared: list[tuple[Path, Path]]) -> None:
     originals = {target: target.read_bytes() if target.exists() else None for _temporary, target in prepared}
     backups: dict[Path, Path | None] = {}
     replaced: list[Path] = []
+    preserved_backups: set[Path] = set()
     try:
         for _temporary, target in prepared:
             backups[target] = create_backup(target, originals[target])
@@ -253,7 +254,12 @@ def replace_prepared_outputs(prepared: list[tuple[Path, Path]]) -> None:
                     os.replace(backup, target)
                     backups[target] = None
             except Exception as rollback_error:
-                rollback_errors.append(f"{target}: {rollback_error}")
+                backup = backups.get(target)
+                if backup is not None:
+                    preserved_backups.add(backup)
+                    rollback_errors.append(f"対象 {target} をバックアップ {backup} から復元できませんでした: {rollback_error}")
+                else:
+                    rollback_errors.append(f"対象 {target} を削除して復元できませんでした: {rollback_error}")
         detail = f"生成データの置換に失敗しました: {error}"
         if rollback_errors:
             detail += f"; ロールバックにも失敗しました: {'; '.join(rollback_errors)}"
@@ -262,7 +268,7 @@ def replace_prepared_outputs(prepared: list[tuple[Path, Path]]) -> None:
         for temporary, _target in prepared:
             temporary.unlink(missing_ok=True)
         for backup in backups.values():
-            if backup is not None:
+            if backup is not None and backup not in preserved_backups:
                 backup.unlink(missing_ok=True)
 
 
