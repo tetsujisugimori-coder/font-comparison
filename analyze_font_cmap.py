@@ -40,11 +40,6 @@ TARGETS: dict[str, FontTarget] = {
     "times-new-roman": FontTarget(
         "Times New Roman", ("times.ttf",), ("Times New Roman", "Times New Roman Regular")
     ),
-    "noto-sans-jp-web": FontTarget(
-        "Noto Sans JP",
-        ("NotoSansJP-Regular.woff2", "NotoSansJP-Regular.otf", "NotoSansJP-Regular.ttf", "NotoSansJP-Regular.woff"),
-        ("Noto Sans JP",),
-    ),
 }
 
 

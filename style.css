@@ -518,6 +518,7 @@ select {
 .attribute-list li {
   font-size: 0.9rem;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .opentype-feature-block {
@@ -600,6 +601,7 @@ select {
 }
 
 .open-type-dialog-meta,
+.open-type-dialog-files,
 .open-type-dialog-summary {
   margin: 0;
   padding: 0;
@@ -608,9 +610,11 @@ select {
   gap: 4px;
 }
 
-.open-type-dialog-summary li {
+.open-type-dialog-summary li,
+.open-type-dialog-files li {
   margin: 0;
   color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .open-type-dialog-meta li {
@@ -626,6 +630,12 @@ select {
   line-height: 1.6;
   border-top: 1px dashed var(--border);
   padding-top: 10px;
+}
+
+.open-type-dialog-official {
+  margin: 0;
+  font-size: 0.84rem;
+  overflow-wrap: anywhere;
 }
 
 .open-type-feature-list-box {
@@ -668,6 +678,7 @@ select {
 .open-type-feature-chip.is-selected {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent), transparent 80%);
+  background: var(--accent-soft);
 }
 
 .open-type-feature-detail {
@@ -1108,6 +1119,20 @@ select {
 }
 
 @media (max-width: 699px) {
+  .open-type-dialog {
+    width: calc(100% - 20px);
+    max-height: calc(100vh - 20px);
+  }
+
+  .open-type-dialog-body {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .open-type-feature-chips {
+    max-height: 180px;
+  }
+
   .app-header,
   .app-shell,
   .memo-integration-panel {

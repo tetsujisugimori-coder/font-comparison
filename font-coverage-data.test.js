@@ -9,12 +9,11 @@ const context = { window: {} };
 vm.runInNewContext(fs.readFileSync('font-coverage-data.js', 'utf8'), context);
 const data = context.window.FontCoverageData;
 
-test('対象9フォントを持ち、未解析を未収録扱いにしない', () => {
-  assert.equal(Object.keys(data.fonts).length, 9);
+test('対象8フォントを持ち、未解析を未収録扱いにしない', () => {
+  assert.equal(Object.keys(data.fonts).length, 8);
   assert.equal(data.fonts['cascadia-code'].status, 'not-analyzed');
   assert.deepEqual([...data.fonts['cascadia-code'].ranges], []);
   assert.equal(Object.values(data.fonts).filter((font) => font.status === 'analyzed').length, 7);
-  assert.equal(data.fonts['noto-sans-jp-web'].status, 'not-analyzed');
 });
 
 test('解析済みデータは版・ファイル・内部フェイスと整列済み範囲を持つ', () => {

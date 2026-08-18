@@ -122,7 +122,50 @@ test('OpenType機能ダイアログにはボタン、一覧、説明欄の要素
   assert.match(html, /openTypeFeatureDialogFeatureList/);
   assert.match(html, /openTypeFeatureDialogFeatureDetail/);
   assert.match(app, /openTypeFeatureDialogForFont\(font, openTypeButton\)/);
-  assert.match(app, /openTypeDialogFeatureList\.addEventListener\('/);
+  assert.match(html, /opentype-dialog\.js[\s\S]*app\.js/);
+  assert.match(app, /OpenTypeDialog\.createController/);
+  assert.match(app, /aria-pressed="false"/);
+  assert.doesNotMatch(app, /role="option"/);
+  assert.doesNotMatch(app, /role', 'listbox/);
   assert.match(css, /\.open-type-feature-button/);
   assert.match(css, /\.open-type-dialog/);
+});
+
+test('ダイアログは指定された情報順とGoogle Fontsの注意書きを持つ', () => {
+  const metaPosition = html.indexOf('openTypeFeatureDialogMeta');
+  const filesPosition = html.indexOf('openTypeFeatureDialogFiles');
+  const summaryPosition = html.indexOf('openTypeFeatureDialogSummary');
+  const listPosition = html.indexOf('openTypeFeatureDialogFeatureList');
+  const detailPosition = html.indexOf('openTypeFeatureDialogFeatureDetail');
+  const notePosition = html.indexOf('openTypeFeatureDialogDisclaimer');
+  const officialPosition = html.indexOf('openTypeFeatureDialogOfficial');
+  assert.ok(metaPosition < filesPosition && filesPosition < summaryPosition);
+  assert.ok(summaryPosition < listPosition && listPosition < detailPosition);
+  assert.ok(detailPosition < notePosition && notePosition < officialPosition);
+  assert.match(app, /Google FontsのCSSに定義された複数の配信ファイルを解析し/);
+  assert.match(app, /CSS取得日/);
+  assert.match(app, /User-Agent/);
+  assert.match(app, /確認できたOpenType機能数/);
+});
+
+test('OpenType機能辞書は公式Registered Featuresページだけを参照する', () => {
+  for (const page of ['features_ae', 'features_fj', 'features_ko', 'features_pt', 'features_uz']) {
+    assert.match(app, new RegExp(page));
+  }
+  assert.doesNotMatch(app, /features_(?:[0-9]+|zh)(?:['"/])/);
+  assert.doesNotMatch(app, /unicode\.org\/standard\/reports\/tr11/);
+  for (const officialName of [
+    'Alternative Fractions',
+    'Small Capitals From Capitals',
+    'Contextual Alternates',
+    'Case-Sensitive Forms',
+    'Glyph Composition / Decomposition',
+    'Capital Spacing',
+    'Required Contextual Alternates',
+    'Required Ligatures',
+    'Alternate Vertical Half Metrics'
+  ]) {
+    assert.match(app, new RegExp(officialName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
+  }
+  assert.doesNotMatch(app, /変え内容/);
 });

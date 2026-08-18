@@ -1,441 +1,93 @@
-const openTypeFeatureDefinitions = {
-  aalt: {
-    name: '代替字形',
-    description: '既定の置換を含む代替字形を使うための補助機能です。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_ae']
-  },
-  afrc: {
-    name: '標準アラビア文字の分離',
-    description: 'アラビア文字列の既定の字形選択ルールを定義する補助情報です。',
-    category: '自動',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_uz']
-  },
-  c2sc: {
-    name: '小文字の大文字字形化',
-    description: '小文字を対応する小型の大文字相当字形へ置き換えます。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_pt']
-  },
-  calt: {
-    name: '文脈依存合字',
-    description: '前後の文字列の文脈で合字や代替字形を選択します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/otspec190/chapter2']
-  },
-  ccmp: {
-    name: '複合文字・合字作成補助',
-    description: '文字列内での既定の合字作成に備え、文字要素の連結・再配置を支援する補助置換です。',
-    category: '自動',
-    note: '文字の正しい組版に必要な置換として働くことが多く、表示上の差分はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_12']
-  },
-  case: {
-    name: '大文字小文字変換',
-    description: '大文字小文字の対応を行うための字形候補を示します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/otspec190/chapter2']
-  },
-  cpsp: {
-    name: '結合文字シーケンス補助',
-    description: '結合文字系の置換に用いる字形ルールを制御します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/otspec190/chapter2']
-  },
-  dlig: {
-    name: '離散合字',
-    description: '通常の合字より意図的に長い文字列の合字を選択します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_3']
-  },
-  dnom: {
-    name: '下付き数字',
-    description: '下付き数字の字形に置換します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  expt: {
-    name: '指数',
-    description: '上下方向の表現を行う上付き構成向けの代替字形を扱います。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  fina: {
-    name: '語末字形',
-    description: '語尾位置の文字形を使用します。',
-    category: '自動',
-    note: 'アラビア文字など、文字列中の位置に応じて通常は自動適用されます。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_pt']
-  },
-  frac: {
-    name: '斜め分数',
-    description: '分数表示のために上付き・下付き数字の配置と分割字形を行います。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_6']
-  },
-  fwid: {
-    name: '全角幅',
-    description: '文字を全角幅へ合わせるために代替字形を使うことがあります。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  halt: {
-    name: '横書きハンドル位置補正',
-    description: '横書き時の文字グリフや配置に関する補助情報です。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/otspec190/chapter2']
-  },
-  hwid: {
-    name: '半角幅',
-    description: '文字を半角幅へ合わせるために代替字形を使うことがあります。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  hlig: {
-    name: 'ヒンディー文字合字',
-    description: '文字列内の特定パターンで合字候補を適用します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_2']
-  },
-  hkna: {
-    name: '横書きかな',
-    description: '横組み環境での和文かな形の置換候補を扱います。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_zh']
-  },
-  hojo: {
-    name: '補助字形',
-    description: '文字形状の保護または代替ルールとして用いられることがあります。',
-    category: 'フォント固有',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_pt']
-  },
-  init: {
-    name: '語頭字形',
-    description: 'アラビア文字列の語頭位置の字形を選択します。',
-    category: '自動',
-    note: '文字の位置に応じた形が適用されるため、通常は自動で使われます。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_pt']
-  },
-  isol: {
-    name: '孤立字形',
-    description: 'アラビア文字列で単独で使う場合の基準字形を選択します。',
-    category: '自動',
-    note: '文字の位置に応じた形が適用されるため、通常は自動で使われます。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_pt']
-  },
-  ital: {
-    name: 'イタリック字形',
-    description: '斜体形の対応に関わる字形の選択規則です。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  jp78: {
-    name: 'JIS78字形',
-    description: 'JIS78準拠の文字形に置き換える候補を提供します。',
-    category: '任意',
-    references: ['https://www.unicode.org/standard/reports/tr11/']
-  },
-  jp83: {
-    name: 'JIS83字形',
-    description: 'JIS83準拠の字形へ置き換える候補を提供します。',
-    category: '任意',
-    references: ['https://www.unicode.org/standard/reports/tr11/']
-  },
-  jp90: {
-    name: 'JIS90字形',
-    description: 'JIS90準拠の文字形へ置き換える候補を提供します。',
-    category: '任意',
-    references: ['https://www.unicode.org/standard/reports/tr11/']
-  },
-  jp04: {
-    name: 'JIS2004字形',
-    description: 'JIS2004準拠の字形へ置き換える候補を提供します。',
-    category: '任意'
-  },
-  kern: {
-    name: 'カーニング',
-    description: '文字ペア間の字間を調整します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_3']
-  },
-  liga: {
-    name: '標準合字',
-    description: 'fiやflなど、既定の文字列を合字として置換します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_7']
-  },
-  lnum: {
-    name: 'リニア数字',
-    description: '数字を等幅のロング型（線形）配置へ置き換えます。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  locl: {
-    name: 'ローカライズ',
-    description: '言語や地域ごとの字形差し替えを行います。',
-    category: 'フォント固有',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_10']
-  },
-  mark: {
-    name: 'マーク配置',
-    description: '基底文字と上付き記号の位置を調整します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_f']
-  },
-  medi: {
-    name: '中間字形',
-    description: 'アラビア文字列の中間位置の字形を選択します。',
-    category: '自動',
-    note: '文字の位置に応じた形が適用されるため、通常は自動で使われます。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_pt']
-  },
-  mkmk: {
-    name: '連携記号',
-    description: '合成記号を構成する際、記号同士の位置関係を調整します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_f']
-  },
-  nalt: {
-    name: '異体字候補',
-    description: '文脈に応じて別の字形候補へ切り替えます。',
-    category: 'フォント固有',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  nlck: {
-    name: 'ネガティブロック',
-    description: '非標準字形のブロッキングと関連ルールを補助します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  numr: {
-    name: '上付き数字',
-    description: '上付き数字の字形に置き換えます。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  onum: {
-    name: '旧字形数字',
-    description: '旧字体の数字字形へ切り替えることがあります。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  ordn: {
-    name: '序数接尾辞',
-    description: '序数を示す接尾辞の字形を制御します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  pkna: {
-    name: '縦形かな',
-    description: 'プロポーショナルかな字形の縦方向処理に関係する代替候補です。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_zh']
-  },
-  pnum: {
-    name: 'プロポーショナル数字',
-    description: '数字の幅を可変にするため、固定幅でなく可変幅字形を選びます。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  palt: {
-    name: 'プロポーショナル字形',
-    description: '文字や約物の幅を環境に応じて揃える代替候補です。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  pwid: {
-    name: 'プロポーショナル幅',
-    description: '文字幅の比例調整を行うための規則です。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  qwid: {
-    name: '全角数字',
-    description: '数字幅を全角基準に合わせます。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  rclt: {
-    name: '相互参照連結',
-    description: 'ラテン文字列を文脈と形状に応じて接続字形へ置換します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_7']
-  },
-  rlig: {
-    name: '任意合字',
-    description: '必要に応じて通常の合字セットを適用します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_7']
-  },
-  ruby: {
-    name: 'ルビ',
-    description: 'ルビ文字のための代替情報を示します。',
-    category: 'フォント固有',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  salt: {
-    name: 'スタイル代替',
-    description: '用途や見た目に応じた代替字形を選べる機能です。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_11']
-  },
-  sinf: {
-    name: '上付き情報',
-    description: '上下付き文字の補正を行うための代替字形を扱います。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  smcp: {
-    name: 'スモールキャップ',
-    description: '小文字を小型の大文字風字形へ置換します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_13']
-  },
-  ss01: {
-    name: 'スタイルセット1',
-    description: '同じ文字について別デザインの字形へ切り替えます。変化内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  ss02: {
-    name: 'スタイルセット2',
-    description: '同じ文字について別デザインの字形へ切り替えます。変化内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  ss03: {
-    name: 'スタイルセット3',
-    description: '同じ文字について別デザインの字形へ切り替えます。変化内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  ss04: {
-    name: 'スタイルセット4',
-    description: '同じ文字について別デザインの字形へ切り替えます。変化内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  ss05: {
-    name: 'スタイルセット5',
-    description: '同じ文字について別デザインの字形へ切り替えます。変化内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  ss06: {
-    name: 'スタイルセット6',
-    description: '同じ文字について別デザインの字形へ切り替えます。変化内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  ss07: {
-    name: 'スタイルセット7',
-    description: '同じ文字について別デザインの字形へ切り替えます。変化内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  ss08: {
-    name: 'スタイルセット8',
-    description: '同じ文字について別デザインの字形へ切り替えます。変化内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  ss18: {
-    name: 'スタイルセット18',
-    description: '同じ文字について別デザインの字形へ切り替えます。変化内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  ss19: {
-    name: 'スタイルセット19',
-    description: '同じ文字について別デザインの字形へ切り替えます。変化内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  ss20: {
-    name: 'スタイルセット20',
-    description: '同じ文字について別デザインの字形へ切り替えます。変え内容はフォントごとに異なる場合があります。',
-    category: 'フォント固有',
-    note: '同じ文字のフォント内デザインを別パターンへ切り替えるため、具体的な見え方はフォントごとに異なります。',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_17']
-  },
-  subs: {
-    name: '下付き文字',
-    description: '文字を下付き位置へ置くための代替字形を選択します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  sups: {
-    name: '上付き文字',
-    description: '文字を上付き位置へ置くための代替字形を選択します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  tnum: {
-    name: '等幅数字',
-    description: '数字の幅を揃えた等幅表示用の字形へ置き換えます。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  trad: {
-    name: '伝統字形',
-    description: '簡易/繁体など特定の文字系に対して既定とは別の字形を提供します。',
-    category: 'フォント固有',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_13']
-  },
-  twid: {
-    name: '全角幅変更',
-    description: '文字を全角幅へ寄せるための代替字形を提供します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  vkrn: {
-    name: '縦方向カーニング',
-    description: '縦組時の上下の字間を調整します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_3']
-  },
-  vert: {
-    name: '縦書き字形',
-    description: '文字を縦組み用に代替字形へ切り替えます。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  vhal: {
-    name: '縦書きハンドル位置補正',
-    description: '縦書き時の文字の位置・参照情報を補助するための情報です。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/otspec190/chapter2']
-  },
-  vkna: {
-    name: '縦書き和文カナ',
-    description: '縦組みでの和文かなの字形を切り替える可能性があります。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_zh']
-  },
-  vrt2: {
-    name: '代替縦書き字形2',
-    description: '縦組み用の追加字形への切替を提供します。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  },
-  zero: {
-    name: '斜線ゼロ',
-    description: '数字のゼロを斜線付きの字形へ置き換えます。',
-    category: '任意',
-    references: ['https://learn.microsoft.com/en-us/typography/opentype/spec/features_1']
-  }
+const officialFeaturePages = {
+  ae: 'https://learn.microsoft.com/en-us/typography/opentype/spec/features_ae',
+  fj: 'https://learn.microsoft.com/en-us/typography/opentype/spec/features_fj',
+  ko: 'https://learn.microsoft.com/en-us/typography/opentype/spec/features_ko',
+  pt: 'https://learn.microsoft.com/en-us/typography/opentype/spec/features_pt',
+  uz: 'https://learn.microsoft.com/en-us/typography/opentype/spec/features_uz'
 };
 
+function officialFeaturePage(tag) {
+  const initial = tag[0];
+  if (initial <= 'e') return officialFeaturePages.ae;
+  if (initial <= 'j') return officialFeaturePages.fj;
+  if (initial <= 'o') return officialFeaturePages.ko;
+  if (initial <= 't') return officialFeaturePages.pt;
+  return officialFeaturePages.uz;
+}
+
+function defineOpenTypeFeature(tag, name, officialName, description, category = '任意') {
+  return { name, officialName, description, category, references: [officialFeaturePage(tag)] };
+}
+
+const openTypeFeatureDefinitions = {
+  aalt: defineOpenTypeFeature('aalt', 'すべての代替字形', 'Access All Alternates', '選択した文字に用意された代替字形へアクセスするための機能です。', '任意'),
+  afrc: defineOpenTypeFeature('afrc', '代替分数', 'Alternative Fractions', 'スラッシュで区切られた数字を、別形式の分数字形へ置き換えます。', '任意'),
+  c2sc: defineOpenTypeFeature('c2sc', '大文字からスモールキャップ', 'Small Capitals From Capitals', '大文字を対応する小型大文字の字形へ置き換えます。', '任意'),
+  calt: defineOpenTypeFeature('calt', '文脈依存の代替字形', 'Contextual Alternates', '前後の字形や位置関係に応じて、適切な代替字形へ置き換えます。', '自動'),
+  case: defineOpenTypeFeature('case', '大文字・小文字対応字形', 'Case-Sensitive Forms', '大文字だけで組む文章に合わせ、約物などの位置や形を調整します。', '任意'),
+  ccmp: defineOpenTypeFeature('ccmp', '字形の合成／分解', 'Glyph Composition / Decomposition', '文字と結合記号を合成済み字形へ置換する、または処理に適した字形へ分解します。', '自動'),
+  cpsp: defineOpenTypeFeature('cpsp', '大文字間隔', 'Capital Spacing', '大文字だけで組む文章の読みやすさを保つため、字間を広げます。', '任意'),
+  dlig: defineOpenTypeFeature('dlig', '任意合字', 'Discretionary Ligatures', '装飾や特別な効果のため、利用者が任意で選ぶ合字へ置き換えます。', '任意'),
+  dnom: defineOpenTypeFeature('dnom', '分母用数字', 'Denominators', '数字を分数の分母に適した小型の字形へ置き換えます。', '任意'),
+  expt: defineOpenTypeFeature('expt', 'エキスパート字形', 'Expert Forms', '通常の字形を、専門的な組版向けに用意された字形へ置き換えます。', '任意'),
+  fina: defineOpenTypeFeature('fina', '語末字形', 'Terminal Forms', '単語末尾に位置する文字を語末用の字形へ置き換えます。', '自動'),
+  frac: defineOpenTypeFeature('frac', '分数', 'Fractions', 'スラッシュで区切られた数字を、分子・分母と分数線からなる字形へ整えます。', '任意'),
+  fwid: defineOpenTypeFeature('fwid', '全角幅', 'Full Widths', '文字を1 emの全角幅に合わせた字形またはメトリクスへ置き換えます。', '任意'),
+  halt: defineOpenTypeFeature('halt', '代替半角幅', 'Alternate Half Widths', '全角幅の字形を中央に保ったまま、送り幅を半角へ調整します。', '任意'),
+  hlig: defineOpenTypeFeature('hlig', '歴史的合字', 'Historical Ligatures', '歴史的な組版で使われる合字へ置き換えます。', '任意'),
+  hkna: defineOpenTypeFeature('hkna', '横組み用かな字形', 'Horizontal Kana Alternates', 'かなを横組みに適した字形へ置き換えます。', '任意'),
+  hojo: defineOpenTypeFeature('hojo', '補助漢字字形', 'Hojo Kanji Forms', 'JIS X 0212で定義された補助漢字の字形へ置き換えます。', '任意'),
+  hwid: defineOpenTypeFeature('hwid', '半角幅', 'Half Widths', '文字を半角幅に合わせた字形またはメトリクスへ置き換えます。', '任意'),
+  init: defineOpenTypeFeature('init', '語頭字形', 'Initial Forms', '単語の先頭に位置する文字を語頭用の字形へ置き換えます。', '自動'),
+  isol: defineOpenTypeFeature('isol', '独立字形', 'Isolated Forms', '他の文字と連結しない文字を独立用の字形へ置き換えます。', '自動'),
+  ital: defineOpenTypeFeature('ital', 'イタリック字形', 'Italics', '通常の字形を対応するイタリック字形へ置き換えます。', '任意'),
+  jp04: defineOpenTypeFeature('jp04', 'JIS2004字形', 'JIS2004 Forms', '既定の日本語字形をJIS X 0213:2004に対応する字形へ置き換えます。', '任意'),
+  jp78: defineOpenTypeFeature('jp78', 'JIS78字形', 'JIS78 Forms', '既定の日本語字形をJIS C 6226-1978に対応する字形へ置き換えます。', '任意'),
+  jp83: defineOpenTypeFeature('jp83', 'JIS83字形', 'JIS83 Forms', '既定の日本語字形をJIS X 0208-1983に対応する字形へ置き換えます。', '任意'),
+  jp90: defineOpenTypeFeature('jp90', 'JIS90字形', 'JIS90 Forms', '既定の日本語字形をJIS X 0208-1990に対応する字形へ置き換えます。', '任意'),
+  kern: defineOpenTypeFeature('kern', 'カーニング', 'Kerning', '特定の字形の組み合わせで、見た目の間隔が均一になるよう字間を調整します。', '自動'),
+  liga: defineOpenTypeFeature('liga', '標準合字', 'Standard Ligatures', '通常の文章で標準的に使う文字の組み合わせを合字へ置き換えます。', '自動'),
+  lnum: defineOpenTypeFeature('lnum', 'ライニング数字', 'Lining Figures', '数字を大文字と同程度の高さにそろった字形へ置き換えます。', '任意'),
+  locl: defineOpenTypeFeature('locl', '地域・言語別字形', 'Localized Forms', '指定された言語や地域に適した字形へ置き換えます。', '自動'),
+  mark: defineOpenTypeFeature('mark', 'マーク配置', 'Mark Positioning', '結合記号を基底字形に対して正しい位置へ配置します。', '自動'),
+  medi: defineOpenTypeFeature('medi', '語中字形', 'Medial Forms', '単語の途中に位置する文字を語中用の字形へ置き換えます。', '自動'),
+  mkmk: defineOpenTypeFeature('mkmk', 'マーク間配置', 'Mark to Mark Positioning', '複数の結合記号を互いに対して正しい位置へ配置します。', '自動'),
+  nalt: defineOpenTypeFeature('nalt', '注釈用代替字形', 'Alternate Annotation Forms', '文字を丸・四角・括弧などで囲んだ注釈用の字形へ置き換えます。', '任意'),
+  nlck: defineOpenTypeFeature('nlck', 'NLC漢字字形', 'NLC Kanji Forms', '日本の国語審議会が2000年に示した漢字字形へ置き換えます。', '任意'),
+  numr: defineOpenTypeFeature('numr', '分子用数字', 'Numerators', '数字を分数の分子に適した小型の字形へ置き換えます。', '任意'),
+  onum: defineOpenTypeFeature('onum', 'オールドスタイル数字', 'Oldstyle Figures', '数字を小文字本文になじむ高さと上下位置を持つ字形へ置き換えます。', '任意'),
+  ordn: defineOpenTypeFeature('ordn', '序数', 'Ordinals', '序数を表す文字を上付きなどの適切な字形へ置き換えます。', '任意'),
+  palt: defineOpenTypeFeature('palt', 'プロポーショナル代替幅', 'Proportional Alternate Widths', '全角字形を字形ごとの自然な幅に合わせたメトリクスへ調整します。', '任意'),
+  pkna: defineOpenTypeFeature('pkna', 'プロポーショナルかな', 'Proportional Kana', 'かなを字形ごとの自然な幅に設計された字形へ置き換えます。', '任意'),
+  pnum: defineOpenTypeFeature('pnum', 'プロポーショナル数字', 'Proportional Figures', '数字を字形ごとに異なる自然な幅へ置き換えます。', '任意'),
+  pwid: defineOpenTypeFeature('pwid', 'プロポーショナル幅', 'Proportional Widths', '等幅の字形を字形ごとの自然な幅へ置き換えます。', '任意'),
+  qwid: defineOpenTypeFeature('qwid', '四分角幅', 'Quarter Widths', '文字を1 emの4分の1幅に合わせた字形またはメトリクスへ置き換えます。', '任意'),
+  rclt: defineOpenTypeFeature('rclt', '必須の文脈依存代替', 'Required Contextual Alternates', '正しい接続や字形関係に不可欠な文脈依存の代替字形へ置き換えます。', '自動'),
+  rlig: defineOpenTypeFeature('rlig', '必須合字', 'Required Ligatures', '文字体系を正しく表示するために不可欠な合字へ置き換えます。', '自動'),
+  ruby: defineOpenTypeFeature('ruby', 'ルビ用字形', 'Ruby Notation Forms', 'ルビとして小さく組んだときに読みやすい字形へ置き換えます。', '任意'),
+  salt: defineOpenTypeFeature('salt', 'スタイル代替', 'Stylistic Alternates', '利用者が選択できる別デザインの字形へ置き換えます。', '任意'),
+  sinf: defineOpenTypeFeature('sinf', '科学用下付き文字', 'Scientific Inferiors', '化学式などで使う、ベースラインより下に配置された小型字形へ置き換えます。', '任意'),
+  smcp: defineOpenTypeFeature('smcp', 'スモールキャップ', 'Small Capitals', '小文字を対応する小型大文字の字形へ置き換えます。', '任意'),
+  subs: defineOpenTypeFeature('subs', '下付き文字', 'Subscript', '文字を下付き位置に合う小型の字形へ置き換えます。', '任意'),
+  sups: defineOpenTypeFeature('sups', '上付き文字', 'Superscript', '文字を上付き位置に合う小型の字形へ置き換えます。', '任意'),
+  tnum: defineOpenTypeFeature('tnum', '等幅数字', 'Tabular Figures', '数字を表や列で桁位置がそろう等幅の字形へ置き換えます。', '任意'),
+  trad: defineOpenTypeFeature('trad', '繁体字形', 'Traditional Forms', '文字を伝統的な字形へ置き換えます。', '任意'),
+  twid: defineOpenTypeFeature('twid', '三分角幅', 'Third Widths', '文字を1 emの3分の1幅に合わせた字形またはメトリクスへ置き換えます。', '任意'),
+  vert: defineOpenTypeFeature('vert', '縦組み用字形', 'Vertical Alternates', '横組み用の字形を縦組みに適した字形へ置き換えます。', '自動'),
+  vhal: defineOpenTypeFeature('vhal', '代替縦半角メトリクス', 'Alternate Vertical Half Metrics', '全角字形を中央に保ったまま、縦方向の送りを半角へ調整します。', '任意'),
+  vkna: defineOpenTypeFeature('vkna', '縦組み用かな字形', 'Vertical Kana Alternates', 'かなを縦組みに適した字形へ置き換えます。', '任意'),
+  vkrn: defineOpenTypeFeature('vkrn', '縦方向カーニング', 'Vertical Kerning', '縦組みで特定の字形の組み合わせの間隔を調整します。', '自動'),
+  vpal: defineOpenTypeFeature('vpal', 'プロポーショナル代替縦メトリクス', 'Proportional Alternate Vertical Metrics', '全角字形の縦方向の送りを字形ごとの自然な高さへ調整します。', '任意'),
+  vrt2: defineOpenTypeFeature('vrt2', '縦組み用代替字形と回転', 'Vertical Alternates and Rotation', '縦組みで必要な代替字形を適用し、必要に応じて字形を回転します。', '自動'),
+  zero: defineOpenTypeFeature('zero', '斜線付きゼロ', 'Slashed Zero', '数字のゼロを英大文字Oと区別しやすい斜線付き字形へ置き換えます。', '任意')
+};
+
+const stylisticSetDescription = 'フォント制作者が用意した別デザインの字形へ切り替える機能です。どの文字がどのように変化するかは、フォントごとに異なります。';
+for (let index = 1; index <= 20; index += 1) {
+  const number = String(index).padStart(2, '0');
+  const tag = `ss${number}`;
+  openTypeFeatureDefinitions[tag] = defineOpenTypeFeature(tag, `スタイルセット${index}`, `Stylistic Set ${index}`, stylisticSetDescription, 'フォント固有');
+}
 const openTypeUnparsedMessage = 'OpenType機能は未確認です。解析対象のフォントファイルを確認できていません。';
 const openTypeNoFeatureMessage = '解析したフォントファイルでは、OpenType機能を確認できませんでした。';
 
@@ -499,6 +151,14 @@ function buildOpenTypeProfile(fontId) {
       fontVersion: entry.fontVersion || null,
       analysisDate: entry.analysisDate || null,
       analysisMethod: entry.analysisMethod || 'fontTools FeatureList解析（GSUB/GPOS）',
+      cssUrl: entry.cssUrl || null,
+      cssFetchedAt: entry.cssFetchedAt || null,
+      userAgent: entry.userAgent || null,
+      cssHost: entry.cssHost || null,
+      woff2Hosts: Array.isArray(entry.woff2Hosts) ? entry.woff2Hosts : [],
+      requestedWeights: Array.isArray(entry.requestedWeights) ? entry.requestedWeights : [],
+      fontFaceCount: entry.fontFaceCount ?? null,
+      fileCount: entry.fileCount ?? null,
       reason: null
     }
   });
@@ -994,9 +654,11 @@ function openTypeFeatureRows(font) {
       return {
         tag,
         name: definition.name,
+        officialName: definition.officialName,
         description: definition.description,
         category: definition.category || null,
         note: definition.note || null,
+        references: Array.isArray(definition.references) ? definition.references : [],
         tables: Array.isArray(feature.tables) ? feature.tables : []
       };
     }).filter(Boolean);
@@ -1014,10 +676,13 @@ const openTypeDialog = document.getElementById('openTypeFeatureDialog');
 const openTypeDialogTitle = document.getElementById('openTypeFeatureDialogTitle');
 const openTypeDialogSummary = document.getElementById('openTypeFeatureDialogSummary');
 const openTypeDialogMeta = document.getElementById('openTypeFeatureDialogMeta');
+const openTypeDialogFiles = document.getElementById('openTypeFeatureDialogFiles');
 const openTypeDialogFeatureList = document.getElementById('openTypeFeatureDialogFeatureList');
 const openTypeDialogFeatureDetail = document.getElementById('openTypeFeatureDialogFeatureDetail');
 const openTypeDialogClose = document.getElementById('openTypeFeatureDialogClose');
-let activeOpenTypeButton = null;
+const openTypeDialogDisclaimer = document.getElementById('openTypeFeatureDialogDisclaimer');
+const openTypeDialogOfficial = document.getElementById('openTypeFeatureDialogOfficial');
+let openTypeDialogController = null;
 let activeOpenTypeFont = null;
 
 function openTypeButtonLabel(font) {
@@ -1035,21 +700,25 @@ function renderOpenTypeDialogDetail(feature) {
   const category = feature.category ? `<p><strong>分類:</strong> ${escapeHtml(feature.category)}</p>` : '';
   const note = feature.note ? `<p><strong>注意:</strong> ${escapeHtml(feature.note)}</p>` : '';
   const tables = (feature.tables || []).join(' / ');
+  const reference = feature.references?.[0]
+    ? `<p><strong>仕様:</strong> <a href="${escapeHtml(feature.references[0])}" target="_blank" rel="noopener noreferrer">OpenType Registered Features</a></p>`
+    : '';
   return `
     <div class="open-type-feature-detail-content">
       <p><strong>OpenTypeタグ:</strong> ${escapeHtml(feature.tag)}</p>
       <p><strong>機能名:</strong> ${escapeHtml(feature.name)}</p>
+      <p><strong>公式名称:</strong> ${escapeHtml(feature.officialName)}</p>
       <p><strong>説明:</strong> ${escapeHtml(feature.description)}</p>
-      <p><strong>GSUB/GPOS:</strong> ${escapeHtml(tables || '不明')}</p>
+      <p><strong>GSUB／GPOS:</strong> ${escapeHtml(tables || '不明')}</p>
       ${category}
       ${note}
+      ${reference}
     </div>
   `;
 }
 
-function setOpenTypeSelection(chip) {
-  if (!chip || !activeOpenTypeFont) return;
-  const tag = chip.dataset?.featureTag;
+function setOpenTypeSelection(tag) {
+  if (!tag || !activeOpenTypeFont) return;
   const font = fonts.find((item) => item.id === activeOpenTypeFont);
   if (!font) return;
 
@@ -1057,59 +726,65 @@ function setOpenTypeSelection(chip) {
   const selected = rows.find((item) => item.tag === tag);
   if (!selected) return;
 
-  openTypeDialogFeatureList.querySelectorAll('.open-type-feature-chip').forEach((entry) => {
-    const isActive = entry.dataset.featureTag === tag;
-    entry.classList.toggle('is-selected', isActive);
-    entry.setAttribute('aria-selected', String(isActive));
-  });
   openTypeDialogFeatureDetail.setAttribute('aria-label', `OpenType機能: ${selected.tag} ${selected.name} の詳細`);
   openTypeDialogFeatureDetail.innerHTML = renderOpenTypeDialogDetail(selected);
 }
 
 function openTypeFeatureDialogForFont(font, triggerButton) {
   if (!openTypeDialog) return;
-  activeOpenTypeButton = triggerButton || null;
   activeOpenTypeFont = font?.id || null;
 
   const profile = font?.attributes?.openType || {};
   const meta = profile?.analysis || {};
   const rows = openTypeFeatureRows(font);
   const source = font?.delivery || font?.sourceInfo || {};
-  const summaryName = [
-    `解析元: ${[meta.fileName, meta.faceName, meta.fontVersion].filter(Boolean).join(' / ') || '未確認'}`,
-    `解析日: ${meta.analysisDate || '未確認'}`,
-    `解析方法: ${meta.analysisMethod || 'fontToolsによるGSUB／GPOS FeatureList解析'}`,
-    `解析ファイルで${profile.totalFeatures || 0}件を確認`,
-    `説明付き掲載${rows.length}件`
-  ];
+  const isGoogleFonts = Boolean(meta.cssUrl);
 
   openTypeDialogTitle.textContent = `${font?.name || ''}`;
-  openTypeDialogSummary.innerHTML = summaryName.map((line) => `<li>${escapeHtml(line)}</li>`).join('');
   openTypeDialogMeta.innerHTML = [
     `<li><strong>利用環境:</strong> ${escapeHtml(source.environment || font?.attributes?.environment || '未確認')}</li>`,
     `<li><strong>提供元:</strong> ${escapeHtml(source.provider || '未確認')}</li>`,
     `<li><strong>読み込み方法:</strong> ${escapeHtml(source.loadingMethod || '未確認')}</li>`,
-    `<li><strong>CSS取得先:</strong> ${escapeHtml(source.cssHost || '-')}</li>`,
-    `<li><strong>フォントファイル配信先:</strong> ${escapeHtml(source.fileHost || '-')}</li>`,
-    `<li><strong>指定ウェイト:</strong> ${(source.weights || ['-']).join(' / ')}</li>`,
-    `<li><strong>OpenType解析:</strong> ${profile.verified ? '解析済み' : '未解析'}</li>`,
-    `<li><strong>公式情報:</strong> <a href="${escapeHtml(font?.sourceUrl || '')}" target="_blank" rel="noopener noreferrer">${escapeHtml(font?.sourceUrl || '未確認')}</a></li>`
+    `<li><strong>CSS取得先:</strong> ${escapeHtml(meta.cssHost || source.cssHost || '-')}</li>`,
+    `<li><strong>フォントファイル配信先:</strong> ${escapeHtml(meta.woff2Hosts?.join(' / ') || source.fileHost || '-')}</li>`,
+    `<li><strong>指定ウェイト:</strong> ${escapeHtml((meta.requestedWeights?.length ? meta.requestedWeights : source.weights || ['-']).join(' / '))}</li>`
   ].join('');
+  openTypeDialogFiles.innerHTML = isGoogleFonts
+    ? [
+        '<li><strong>解析対象:</strong> Google Fonts CSSに定義されたWOFF2</li>',
+        `<li><strong>CSS API:</strong> ${escapeHtml(meta.cssUrl)}</li>`,
+        `<li><strong>CSS取得日:</strong> ${escapeHtml(meta.cssFetchedAt || meta.analysisDate || '未確認')}</li>`,
+        `<li><strong>User-Agent:</strong> ${escapeHtml(meta.userAgent || '未確認')}</li>`,
+        `<li><strong>CSS内の@font-face:</strong> ${escapeHtml(meta.fontFaceCount ?? '未確認')}件</li>`,
+        `<li><strong>解析ファイル数:</strong> ${escapeHtml(meta.fileCount ?? '未確認')}件</li>`
+      ].join('')
+    : [
+        `<li><strong>解析対象:</strong> ${escapeHtml([meta.fileName, meta.faceName, meta.fontVersion].filter(Boolean).join(' / ') || '未確認')}</li>`
+      ].join('');
+  openTypeDialogSummary.innerHTML = [
+    `<li><strong>OpenType解析:</strong> ${profile.verified ? '解析済み' : '未解析'}</li>`,
+    `<li><strong>解析日:</strong> ${escapeHtml(meta.analysisDate || '未確認')}</li>`,
+    `<li><strong>解析方法:</strong> ${escapeHtml(meta.analysisMethod || '未確認')}</li>`,
+    `<li><strong>確認できたOpenType機能数:</strong> ${profile.totalFeatures || 0}件</li>`,
+    `<li><strong>説明付きで掲載している機能数:</strong> ${rows.length}件</li>`
+  ].join('');
+  openTypeDialogDisclaimer.textContent = isGoogleFonts
+    ? 'Google FontsのCSSに定義された複数の配信ファイルを解析し、確認できたOpenType機能を統合して表示しています。実際にブラウザが取得するファイルは、表示する文字やブラウザ環境によって異なる場合があります。'
+    : 'これらは解析したフォントのGSUB／GPOS FeatureListに基づく確認です。閲覧環境のフォント版が解析対象と異なる場合があります。';
+  const sourceUrl = font?.sourceUrl || '';
+  openTypeDialogOfficial.innerHTML = `<strong>公式情報:</strong> <a href="${escapeHtml(sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeHtml(sourceUrl || '未確認')}</a>`;
 
   if (openTypeDialogFeatureDetail) {
     openTypeDialogFeatureDetail.setAttribute('aria-live', 'polite');
     openTypeDialogFeatureDetail.removeAttribute('aria-label');
   }
-  if (openTypeDialogFeatureList) {
-    openTypeDialogFeatureList.setAttribute('role', 'listbox');
-    openTypeDialogFeatureList.setAttribute('aria-label', `${font?.name || ''}のOpenType機能`);
-  }
+  openTypeDialogFeatureList.setAttribute('aria-label', `${font?.name || ''}のOpenType機能`);
 
   if (!profile?.verified) {
     openTypeDialogFeatureList.innerHTML = '';
     openTypeDialogFeatureDetail.innerHTML = `<p class="open-type-feature-empty">${escapeHtml(profile?.analysis?.reason || openTypeUnparsedMessage)}</p>`;
     openTypeDialogFeatureDetail.setAttribute('aria-label', 'OpenType機能: 未確認');
-    openTypeDialog.showModal();
+    openTypeDialogController.open(triggerButton);
     return;
   }
 
@@ -1117,7 +792,7 @@ function openTypeFeatureDialogForFont(font, triggerButton) {
     openTypeDialogFeatureList.innerHTML = '';
     openTypeDialogFeatureDetail.innerHTML = `<p class="open-type-feature-empty">${openTypeNoFeatureMessage}</p>`;
     openTypeDialogFeatureDetail.setAttribute('aria-label', 'OpenType機能: 0件');
-    openTypeDialog.showModal();
+    openTypeDialogController.open(triggerButton);
     return;
   }
 
@@ -1127,48 +802,28 @@ function openTypeFeatureDialogForFont(font, triggerButton) {
     <button
       type="button"
       class="open-type-feature-chip"
-      role="option"
-      aria-selected="false"
-      data-feature-tag="${row.tag}"
+      aria-pressed="false"
+      data-feature-tag="${escapeHtml(row.tag)}"
     >${escapeHtml(formatFeatureLabel(row))}</button>
   `
     )
     .join('');
 
   const firstChip = openTypeDialogFeatureList.querySelector('.open-type-feature-chip');
-  if (firstChip) {
-    setOpenTypeSelection(firstChip);
-  }
-  openTypeDialog.showModal();
+  openTypeDialogController.open(triggerButton, firstChip);
 }
 
 function bindOpenTypeDialogEvents() {
   if (!openTypeDialog || !openTypeDialogClose) return;
   if (!openTypeDialogFeatureList) return;
-
+  openTypeDialogController = window.OpenTypeDialog.createController({
+    dialog: openTypeDialog,
+    closeButton: openTypeDialogClose,
+    featureList: openTypeDialogFeatureList,
+    onSelect: setOpenTypeSelection
+  });
   openTypeDialog.addEventListener('close', () => {
-    if (activeOpenTypeButton) {
-      activeOpenTypeButton.focus();
-      activeOpenTypeButton = null;
-    }
     activeOpenTypeFont = null;
-  });
-
-  openTypeDialogClose.addEventListener('click', () => {
-    if (openTypeDialog.open) openTypeDialog.close();
-  });
-
-  openTypeDialog.addEventListener('cancel', (event) => {
-    if (activeOpenTypeFont) {
-      event.preventDefault();
-      openTypeDialog.close();
-    }
-  });
-
-  openTypeDialogFeatureList.addEventListener('click', (event) => {
-    const chip = event.target.closest('.open-type-feature-chip');
-    if (!chip) return;
-    setOpenTypeSelection(chip);
   });
 }
 

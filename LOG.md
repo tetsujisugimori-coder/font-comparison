@@ -86,6 +86,27 @@ Microsoft製品付属7フォントは「Microsoft製品付属（再配布は別�
 
 ## 2026-08-18 OpenType機能情報のダイアログ化
 
+### Google Fonts版Noto Sans JPの追加解析
+
+- 取得元CSS: `https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap`
+- CSS取得日: `2026-08-18`
+- User-Agent: `Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36`
+- CSS配信元／WOFF2配信元: `fonts.googleapis.com`／`fonts.gstatic.com`
+- 指定ウェイト: 400／700。CSSの `@font-face` は各124件、計248件。
+- 同一URLが400と700で共有されていたため、重複排除後の解析対象は124 WOFF2。各ウェイトは124ファイルに対応する。
+- 124ファイルすべてについてSHA-256、unicode-range、ウェイト、GSUB／GPOS FeatureListを記録し、ファイルごとの結果から和集合を生成した。フォントファイル自体は保存・コミットしていない。
+- 統合タグ（11件）: `ccmp`, `halt`, `kern`, `liga`, `locl`, `palt`, `vert`, `vhal`, `vkrn`, `vpal`, `vrt2`。
+- GSUBで確認: 5タグ。GPOSで確認: 7タグ。`vert` は両テーブルに存在するため重複表示せず `GSUB / GPOS` として保持した。
+- 注意: CSSに定義された全配信ファイルの解析結果であり、1回の閲覧でブラウザが全124ファイルを取得するという意味ではない。実際の取得ファイルは表示文字とブラウザ環境に依存する。
+- 更新コマンド: `python -m pip install -r requirements-font-analysis.txt` 後に `python analyze_google_fonts.py`。
+
+### 辞書・UI・テストの修正
+
+- 掲載タグの名称・説明・分類・URLをOpenType 1.9.1 Registered Featuresの `features_ae`／`features_fj`／`features_ko`／`features_pt`／`features_uz` に合わせて更新した。
+- 未確認の独自タグはチップ化せず、スタイルセットはフォント固有の変化を推測しない共通説明にした。
+- `listbox`／`option`を廃止し、各チップを `button` と `aria-pressed` で表現した。Tab、Enter／Space、Escape、閉じるボタン、起点ボタンへのフォーカス復帰を実装した。
+- CSS解析、ウェイト・unicode-range、URL重複排除、複数ファイル統合、GSUB／GPOS併存、失敗処理をPython fixtureで検証する。ダイアログの選択、`aria-pressed`、終了、フォーカス復帰はDOM動作を模したNodeテストで検証する。
+
 ### 変更内容
 
 - `app.js`

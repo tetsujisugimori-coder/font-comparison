@@ -139,14 +139,12 @@
         <button id="openTypeFeatureDialogClose" type="button" class="open-type-dialog-close" aria-label="OpenType機能ダイアログを閉じる">×</button>
       </div>
       <div class="open-type-dialog-body">
-        <ul id="openTypeFeatureDialogSummary" class="open-type-dialog-summary"></ul>
         <ul id="openTypeFeatureDialogMeta" class="open-type-dialog-meta"></ul>
-        <p id="openTypeFeatureDialogDisclaimer" class="open-type-dialog-note">
-          これらは解析したフォントのGSUB／GPOS FeatureListに基づく確認です。ブラウザで常に適用される保証や、すべての文字で見た目が変わる保証はありません。
-        </p>
+        <ul id="openTypeFeatureDialogFiles" class="open-type-dialog-files"></ul>
+        <ul id="openTypeFeatureDialogSummary" class="open-type-dialog-summary"></ul>
         <div class="open-type-feature-list-box">
           <p class="open-type-feature-list-label">掲載対象のOpenType機能</p>
-          <div id="openTypeFeatureDialogFeatureList" class="open-type-feature-chips"></div>
+          <div id="openTypeFeatureDialogFeatureList" class="open-type-feature-chips" aria-label="OpenType機能"></div>
         </div>
         <div
           id="openTypeFeatureDialogFeatureDetail"
@@ -154,6 +152,8 @@
           role="region"
           aria-live="polite"
         ></div>
+        <p id="openTypeFeatureDialogDisclaimer" class="open-type-dialog-note"></p>
+        <p id="openTypeFeatureDialogOfficial" class="open-type-dialog-official"></p>
       </div>
     </dialog>
 
@@ -162,6 +162,7 @@
     <script defer src="font-coverage-data.js"></script>
     <script defer src="font-opentype-data.js"></script>
     <script defer src="font-coverage.js"></script>
+    <script defer src="opentype-dialog.js"></script>
     <script defer src="app.js"></script>
     <script defer src="katex-data.js"></script>
     <script defer src="katex-page.js"></script>
