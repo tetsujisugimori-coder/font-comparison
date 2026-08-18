@@ -1107,21 +1107,24 @@ function coverageLoadText(font) {
   return characters.join('');
 }
 
-function loadWebFont(font, { retry = false } = {}) {
+function missingWebFontWeights(requestedWeights, loadedWeights) {
+  return requestedWeights.filter((weight) => !loadedWeights.has(weight));
+}
+
+function loadWebFont(font) {
   if (!font.webFont) return Promise.resolve();
   const current = webFontState(font);
   if (current.status === 'loading') return current.promise;
-  if (!retry && current.status === 'loaded' && requestedWebFontWeights(font).every((weight) => current.loadedWeights.has(weight))) return Promise.resolve();
+  const missingWeights = missingWebFontWeights(requestedWebFontWeights(font), current.loadedWeights);
+  if (!missingWeights.length) return Promise.resolve();
 
   const next = { status: 'loading', loadedWeights: new Set(current.loadedWeights), error: null, promise: null };
   webFontLoadStates.set(font.id, next);
   renderSelector();
   renderCards();
-  next.promise = Promise.all(requestedWebFontWeights(font).map(async (weight) => {
-    if (!next.loadedWeights.has(weight)) {
-      await loadWebFontWeight(font, weight);
-      next.loadedWeights.add(weight);
-    }
+  next.promise = Promise.all(missingWeights.map(async (weight) => {
+    await loadWebFontWeight(font, weight);
+    next.loadedWeights.add(weight);
   }))
     .then(() => { next.status = 'loaded'; })
     .catch((error) => { next.status = 'error'; next.error = error; })
@@ -1129,18 +1132,14 @@ function loadWebFont(font, { retry = false } = {}) {
   return next.promise;
 }
 
-function requestExplicitWebFont(font, requestedFonts, loadState, load) {
-  if (!font.webFont) return { isWebFont: false, started: false };
-  const alreadyRequested = requestedFonts.has(font.id);
+function requestExplicitWebFont(font, requestedFonts, load) {
+  if (!font.webFont) return { isWebFont: false };
   requestedFonts.add(font.id);
-  if (alreadyRequested && (loadState.status === 'loading' || loadState.status === 'loaded')) {
-    return { isWebFont: true, started: false };
-  }
-  return { isWebFont: true, started: true, promise: load(font) };
+  return { isWebFont: true, promise: load(font) };
 }
 
 function explicitlyRequestWebFont(font) {
-  return requestExplicitWebFont(font, explicitlyRequestedWebFonts, webFontState(font), loadWebFont);
+  return requestExplicitWebFont(font, explicitlyRequestedWebFonts, loadWebFont);
 }
 
 function requestWebFontsForSelectedIds(fontList, selectedIds, requestedFonts, load) {
@@ -1176,7 +1175,6 @@ function renderSelector() {
         if (!state.selectedIds.includes(font.id)) {
           state.selectedIds.push(font.id);
         }
-        if (font.webFont) explicitlyRequestedWebFonts.add(font.id);
       } else {
         state.selectedIds = state.selectedIds.filter((id) => id !== font.id);
       }
@@ -1282,7 +1280,7 @@ function renderCards() {
         : `${font.name}を選択しました。内容を確認してMemo Nexusへ戻れます。`;
       renderCards();
     });
-    card.querySelector('.retry-web-font')?.addEventListener('click', () => loadWebFont(font, { retry: true }));
+    card.querySelector('.retry-web-font')?.addEventListener('click', () => loadWebFont(font));
     const openTypeButton = card.querySelector('.open-type-feature-button');
     if (openTypeButton) {
       openTypeButton.addEventListener('click', () => {

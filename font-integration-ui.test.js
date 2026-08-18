@@ -19,6 +19,14 @@ function appFunction(name, nextName) {
   return new Function(`${app.slice(start, end)}\nreturn ${name};`)();
 }
 
+function appFunctionWithDependencies(name, nextName, dependencies) {
+  const start = app.indexOf(`function ${name}(`);
+  const end = app.indexOf(`\nfunction ${nextName}(`, start);
+  assert.notEqual(start, -1, `${name} must exist`);
+  assert.notEqual(end, -1, `${nextName} must follow ${name}`);
+  return new Function(...Object.keys(dependencies), `${app.slice(start, end)}\nreturn ${name};`)(...Object.values(dependencies));
+}
+
 test('Memo Nexus連携パネルは通常起動時に非表示で必要な操作を持つ', () => {
   assert.match(html, /id="memoNexusPanel"[^>]*hidden/);
   assert.match(html, /id="returnToMemoButton"[^>]*>Memo Nexusで使用/);
@@ -213,11 +221,10 @@ test('Webフォントは解析済みの見本文字で読込を確認し、実�
 
 test('Memo Nexusの全カード表示はWebフォントの一括取得を誘発しない', () => {
   assert.match(app, /state\.selectedIds = fonts\.map/);
-  assert.match(app, /if \(font\.webFont\) explicitlyRequestedWebFonts\.add\(font\.id\)/);
   assert.match(app, /requestWebFontsForSelectedIds\(fonts, state\.selectedIds, explicitlyRequestedWebFonts, loadWebFont\)/);
 });
 
-test('Memo Nexusの明示選択は対象Webフォントだけを一度だけ読み込み、システムフォントは要求しない', () => {
+test('Memo Nexusの明示選択は対象Webフォントへ毎回判断を委譲し、システムフォントは要求しない', () => {
   const requestExplicitWebFont = appFunction('requestExplicitWebFont', 'explicitlyRequestWebFont');
   const requested = new Set();
   const calls = [];
@@ -225,22 +232,61 @@ test('Memo Nexusの明示選択は対象Webフォントだけを一度だけ読�
     calls.push(font.id);
     return Promise.resolve();
   };
-  const idle = { status: 'idle' };
-  const loaded = { status: 'loaded' };
   const notoSansJp = { id: 'noto-sans-jp-web', webFont: {} };
   const sourceHan = { id: 'source-han-sans-web', webFont: {} };
   const system = { id: 'segoe-ui' };
 
-  assert.deepEqual(requestExplicitWebFont(notoSansJp, requested, idle, load).isWebFont, true);
+  assert.deepEqual(requestExplicitWebFont(notoSansJp, requested, load).isWebFont, true);
   assert.deepEqual([...requested], ['noto-sans-jp-web']);
   assert.deepEqual(calls, ['noto-sans-jp-web']);
-  assert.equal(requestExplicitWebFont(notoSansJp, requested, loaded, load).started, false);
-  assert.deepEqual(calls, ['noto-sans-jp-web']);
-  assert.equal(requestExplicitWebFont(system, requested, idle, load).isWebFont, false);
-  assert.deepEqual(calls, ['noto-sans-jp-web']);
-  requestExplicitWebFont(sourceHan, requested, idle, load);
+  assert.deepEqual(requestExplicitWebFont(notoSansJp, requested, load).isWebFont, true);
+  assert.deepEqual(calls, ['noto-sans-jp-web', 'noto-sans-jp-web']);
+  assert.equal(requestExplicitWebFont(system, requested, load).isWebFont, false);
+  assert.deepEqual(calls, ['noto-sans-jp-web', 'noto-sans-jp-web']);
+  requestExplicitWebFont(sourceHan, requested, load);
   assert.deepEqual([...requested], ['noto-sans-jp-web', 'source-han-sans-web']);
-  assert.deepEqual(calls, ['noto-sans-jp-web', 'source-han-sans-web']);
+  assert.deepEqual(calls, ['noto-sans-jp-web', 'noto-sans-jp-web', 'source-han-sans-web']);
+});
+
+test('loadWebFontは不足Weightだけを取得し、再選択時の状態管理を一元化する', async () => {
+  const missingWebFontWeights = appFunction('missingWebFontWeights', 'loadWebFont');
+  const states = new Map();
+  const requests = [];
+  const font = { id: 'noto-sans-jp-web', webFont: {} };
+  let active = { status: 'loaded', loadedWeights: new Set([400]), error: null };
+  let requiredWeights = [400, 700];
+  const loadWebFont = appFunctionWithDependencies('loadWebFont', 'requestExplicitWebFont', {
+    webFontState: () => active,
+    requestedWebFontWeights: () => requiredWeights,
+    missingWebFontWeights,
+    webFontLoadStates: states,
+    renderSelector: () => {},
+    renderCards: () => {},
+    loadWebFontWeight: async (_font, weight) => { requests.push(weight); }
+  });
+
+  assert.deepEqual(missingWebFontWeights(requiredWeights, active.loadedWeights), [700]);
+  await loadWebFont(font);
+  active = states.get(font.id);
+  assert.deepEqual(requests, [700]);
+  assert.deepEqual([...active.loadedWeights], [400, 700]);
+
+  requiredWeights = [400];
+  assert.deepEqual(missingWebFontWeights(requiredWeights, active.loadedWeights), []);
+  await loadWebFont(font);
+  assert.deepEqual(requests, [700]);
+
+  const inFlight = Promise.resolve();
+  active = { status: 'loading', loadedWeights: new Set([400]), promise: inFlight };
+  assert.strictEqual(loadWebFont(font), inFlight);
+  assert.deepEqual(requests, [700]);
+
+  active = { status: 'error', loadedWeights: new Set([400]), error: new Error('network') };
+  requiredWeights = [400, 700];
+  await loadWebFont(font);
+  active = states.get(font.id);
+  assert.deepEqual(requests, [700, 700]);
+  assert.deepEqual([...active.loadedWeights], [400, 700]);
 });
 
 test('明示選択済みのWebフォントだけがWeight変更時の追加読込対象になる', () => {
@@ -266,7 +312,7 @@ test('明示選択済みのWebフォントだけがWeight変更時の追加読�
   );
   assert.deepEqual(calls, ['noto-sans-jp-web']);
   assert.match(app, /function requestedWebFontWeights\(font\)[\s\S]*new Set\(\[400, state\.fontWeight\]\)/);
-  assert.match(app, /if \(!next\.loadedWeights\.has\(weight\)\)/);
+  assert.match(app, /missingWebFontWeights\(requestedWebFontWeights\(font\), current\.loadedWeights\)/);
 });
 
 test('Memo Nexusの選択操作は共通の明示読込処理を通し、読込状態をカードへ案内する', () => {
